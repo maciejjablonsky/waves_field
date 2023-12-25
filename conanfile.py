@@ -26,6 +26,7 @@ class waves_field(ConanFile):
         self.requires("glfw/3.3.8")
         self.requires("glad/0.1.36")
         self.requires("glm/cci.20230113")
+        self.requires("rapidjson/cci.20230929")
 
     def generate(self):
         deps = CMakeDeps(self)
