@@ -10,7 +10,23 @@ find_package(RapidJSON REQUIRED CONFIG)
 message(STATUS "${CMAKE_VERSION} ")
 set(CMAKE_CXX_MODULES ON)
 
-add_executable(waves_field src/main.cpp "src/app.cpp" "src/config.cpp" "src/shader.cpp" "src/utils.cpp" "src/grid.cpp")
+set(SOURCES 
+    src/app.cpp 
+    src/app.hpp
+    src/camera.cpp
+    src/camera.hpp
+    src/config.cpp 
+    src/config.hpp
+    src/grid.cpp 
+    src/grid.hpp
+    src/main.cpp 
+    src/shader.cpp 
+    src/shader.hpp
+    src/utils.cpp 
+    src/utils.hpp
+)
+
+add_executable(waves_field ${SOURCES})
 
 target_link_libraries(waves_field PRIVATE fmt::fmt glfw glad::glad glm::glm rapidjson)
 
