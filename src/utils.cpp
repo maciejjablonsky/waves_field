@@ -15,4 +15,30 @@ std::string load_text_from_file(const std::filesystem::path& path)
     std::string text = {std::istreambuf_iterator<char>{file}, {}};
     return text;
 }
+
+scoped_file::~scoped_file()
+{
+    if (fp_)
+    {
+        std::fclose(fp_);
+    }
+}
+scoped_file::operator std::FILE*()
+{
+    return fp_;
+}
+
+scoped_file::operator bool()
+{
+    return fp_ != nullptr;
+}
+
+unimplemented_error::unimplemented_error(const std::string& message)
+    : message_{message}
+{ 
+}
+const char* unimplemented_error::what() const
+{
+    return message_.c_str();
+}
 } // namespace wf

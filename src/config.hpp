@@ -7,29 +7,14 @@
 
 namespace wf
 {
-struct scoped_file
-{
-  private:
-    std::FILE* fp_;
-
-  public:
-    scoped_file(auto&&... args)
-    {
-        fp_ = std::fopen(std::forward<decltype(args)>(args)...);
-    }
-    ~scoped_file();
-    operator std::FILE*();
-    operator bool();
-};
-
-class window_config
+class renderer_config
 {
     int width_;
     int height_;
     std::string name_;
 
   public:
-    window_config(const rapidjson::Value& windowValue);
+    renderer_config(const rapidjson::Value& windowValue);
 
     int width() const;
     int height() const;
@@ -49,14 +34,15 @@ class shaders_config
 class config
 {
     rapidjson::Document doc_;
-    window_config windowConfig_;
+    renderer_config renderer_config_;
     shaders_config shadersConfig_;
 
   public:
     config();
 
-    const window_config& window() const;
+    const renderer_config& renderer() const;
     const shaders_config& shaders() const;
+
 };
 
 } // namespace wf

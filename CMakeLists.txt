@@ -1,34 +1,56 @@
 cmake_minimum_required(VERSION 3.15)
 project(waves_field CXX)
 
+set(CMAKE_CXX_STANDARD 23)
+
 find_package(glfw3 REQUIRED CONFIG)
 find_package(fmt REQUIRED CONFIG)
 find_package(glad REQUIRED CONFIG)
 find_package(glm REQUIRED CONFIG)
 find_package(RapidJSON REQUIRED CONFIG)
+find_package(EnTT REQUIRED CONFIG)
+find_package(tinyobjloader REQUIRED CONFIG)
+find_package(Microsoft.GSL REQUIRED CONFIG)
+find_package(magic_enum REQUIRED CONFIG)
 
 message(STATUS "${CMAKE_VERSION} ")
 set(CMAKE_CXX_MODULES ON)
 
-set(SOURCES 
-    src/app.cpp 
-    src/app.hpp
-    src/camera.cpp
-    src/camera.hpp
-    src/config.cpp 
-    src/config.hpp
-    src/grid.cpp 
-    src/grid.hpp
-    src/main.cpp 
-    src/shader.cpp 
-    src/shader.hpp
-    src/utils.cpp 
-    src/utils.hpp
+add_executable(waves_field)
+target_sources(waves_field PUBLIC
+    src/app.cpp
+    src/config.cpp
+    src/main.cpp
+    src/resource/shaders_manager.cpp
+    src/utils.cpp
+    src/systems/renderer.cpp
+    src/systems/pc_input.cpp
+	src/systems/input.cpp
+    src/systems/camera.cpp
+
+    PUBLIC
+    FILE_SET HEADERS 
+    BASE_DIRS src
+    FILES
+        src/app.hpp
+        src/glfw_glad.hpp
+        src/components/grid.hpp
+        src/config.hpp
+        src/systems/renderer.hpp
+        src/systems/pc_input.hpp
+        src/utils.hpp
+        src/resource/shaders_manager.hpp
+        src/scene.hpp
+        src/components/transform.hpp
+		src/systems/input.hpp
+		src/systems/camera.hpp
+        src/systems/unit_axes.hpp
+        
+        src/systems/input_command.hpp
 )
 
-add_executable(waves_field ${SOURCES})
+target_link_libraries(waves_field PRIVATE fmt::fmt glfw glad::glad glm::glm rapidjson EnTT::EnTT tinyobjloader::tinyobjloader Microsoft.GSL::GSL magic_enum::magic_enum)
 
-target_link_libraries(waves_field PRIVATE fmt::fmt glfw glad::glad glm::glm rapidjson)
 
 install(TARGETS waves_field DESTINATION "."
         RUNTIME DESTINATION bin
@@ -40,3 +62,8 @@ set(SHADERS_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
 configure_file(config.json.in config.json @ONLY)
 add_custom_target(config_dependency DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/config.json)
 add_dependencies(waves_field config_dependency)
+
+set(RESOURCE_DIRECTORY ${CMAKE_SOURCE_DIR}/resource)
+configure_file(resource/waves_scene.json.in waves_scene.json @ONLY)
+add_custom_target(waves_scene_dependency DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/waves_scene.json)
+add_dependencies(waves_field waves_scene_dependency)

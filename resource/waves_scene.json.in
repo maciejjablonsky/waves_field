@@ -1,0 +1,69 @@
+{
+  "entities": [
+    {
+      "name": "cube1",
+      "components": [
+        {
+          "type": "transform",
+          "position": [ 0.0, 1.0, 2.0 ]
+        },
+        {
+          "type": "mesh",
+          "file": "@RESOURCE_DIRECTORY@/cube.obj"
+        }
+      ]
+    },
+    {
+      "name": "cube2",
+      "components": [
+        {
+          "type": "transform",
+          "position": [ 2.0, 0.0, 0.0 ]
+        },
+        {
+          "type": "mesh",
+          "file": "@RESOURCE_DIRECTORY@/cube.obj"
+        }
+      ]
+    },
+    {
+      "name": "cube3",
+      "components": [
+        {
+          "type": "transform",
+          "position": [ -2.0, 0.0, 0.0 ]
+        },
+        {
+          "type": "mesh",
+          "file": "@RESOURCE_DIRECTORY@/cube.obj"
+        }
+      ]
+    },
+    {
+      "name": "cube4",
+      "components": [
+        {
+          "type": "transform",
+          "position": [ 0.0, 0.0, 2.0 ]
+        },
+        {
+          "type": "mesh",
+          "file": "@RESOURCE_DIRECTORY@/cube.obj"
+        }
+      ]
+    },
+    {
+      "name": "cube5",
+      "components": [
+        {
+          "type": "transform",
+          "position": [ 0.0, 0.0, -2.0 ]
+        },
+        {
+          "type": "mesh",
+          "file": "@RESOURCE_DIRECTORY@/cube.obj"
+        }
+      ]
+    }
+  ]
+}

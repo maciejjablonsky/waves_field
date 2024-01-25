@@ -1,42 +1,26 @@
 #include "config.hpp"
 #include <stdexcept>
 #include <array>
+#include <utils.hpp>
 
 namespace wf
 {
-scoped_file::~scoped_file()
-{
-    if (fp_)
-    {
-        std::fclose(fp_);
-    }
-}
-scoped_file::operator std::FILE*()
-{
-    return fp_;
-}
-
-scoped_file::operator bool()
-{
-    return fp_ != nullptr;
-}
-
-window_config::window_config(const rapidjson::Value& windowValue)
+renderer_config::renderer_config(const rapidjson::Value& windowValue)
 {
     width_  = windowValue["width"].GetInt();
     height_ = windowValue["height"].GetInt();
     name_   = windowValue["name"].GetString();
 }
 
-int window_config::width() const
+int renderer_config::width() const
 {
     return width_;
 }
-int window_config::height() const
+int renderer_config::height() const
 {
     return height_;
 }
-const std::string& window_config::name() const
+const std::string& renderer_config::name() const
 {
     return name_;
 }
@@ -51,9 +35,9 @@ std::filesystem::path shaders_config::source_directory() const
     return source_directory_;
 }
 
-const window_config& config::window() const
+const renderer_config& config::renderer() const
 {
-    return windowConfig_;
+    return renderer_config_;
 }
 
 const shaders_config& config::shaders() const
@@ -75,7 +59,7 @@ config::config()
           doc.ParseStream(is);
           return doc;
       }()),
-      windowConfig_(doc_["window"]), shadersConfig_(doc_["shaders"])
+      renderer_config_(doc_["renderer"]), shadersConfig_(doc_["shaders"])
 {
 }
 } // namespace wf
