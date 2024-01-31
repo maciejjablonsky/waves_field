@@ -1,10 +1,16 @@
+#include <components/grid.hpp>
+#include <components/mesh.hpp>
+#include <components/render.hpp>
+#include <components/transform.hpp>
 #include <config.hpp>
 #include <glfw_glad.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
+#include <random>
+#include <ranges>
 #include <resource/shaders_manager.hpp>
 #include <systems/renderer.hpp>
-#include <ranges>
 
 namespace wf::systems
 {
@@ -31,7 +37,6 @@ void display_control_cube(resource::shaders_manager& shaders_manager,
 
         -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
         0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f};
-    std::ranges::for_each(vertices, [](float& v) { v += 0.5f; });
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -52,7 +57,9 @@ void display_control_cube(resource::shaders_manager& shaders_manager,
 
     // Set model, view, projection matrices here
     glm::mat4 model =
-        glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::translate(glm::mat4(1.0f), glm::vec3(0.25f, 0.5f, -0.25f));
+    // model = glm::rotate(glm::radians(180), model);
+    model = glm::scale(model, glm::vec3{0.5f, 1.f, 0.5f});
 
     shader.set("model", model);
     shader.set("view", view_matrix);
@@ -125,7 +132,7 @@ void renderer::render_unit_axes_(resource::shaders_manager& shaders_manager,
     for (const auto& [i, color] : std::views::enumerate(colors))
     {
         shader.set("axis_color", color);
-		glDrawArrays(GL_LINES,2 * i, 2);
+        glDrawArrays(GL_LINES, 2 * i, 2);
     }
     glBindVertexArray(0);
 }
@@ -155,6 +162,7 @@ void renderer::initialize(const renderer_config& c)
     }
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
     viewport_ = {c.width(), c.height()};
     glViewport(0, 0, viewport_.x, viewport_.y);
 }
@@ -166,6 +174,59 @@ renderer::~renderer() noexcept
         glfwDestroyWindow(glfw_window_);
     }
     glfwTerminate();
+}
+
+void renderer::render_grids_(entt::registry& entities,
+                             resource::shaders_manager& shaders_manager,
+                             const glm::mat4& view_matrix,
+                             const glm::mat4& projection_matrix) const
+{
+    auto view = entities.view<components::transform,
+                              components::render,
+                              components::grid>();
+    for (auto entity : view)
+    {
+        auto& grid      = view.get<components::grid>(entity);
+        auto& render    = view.get<components::render>(entity);
+        auto& transform = view.get<components::transform>(entity);
+        auto& shader    = render.shader.get();
+
+        shader.use();
+        shader.set("view", view_matrix);
+        shader.set("projection", projection_matrix);
+
+        auto t_origin = transform.position;
+        auto heights  = grid.heights();
+        glm::vec3 top_right = {1.f, 0.f, 0.f};
+        glm::vec3 top_left = {0.f, 1.f, 0.f};
+        glm::vec3 bottom_right = {0.f, 0.f, 0.2f};
+        glm::vec3 bottom_left = {1.f, 1.f, 0.f};
+
+        for (int x = 0; x < grid.x_tiles(); ++x)
+        {
+            for (int z = 0; z < grid.z_tiles(); ++z)
+            {
+                float h                     = heights[std::array{x, z}];
+                glm::vec3 relative_position = {
+                    x * grid.tile_size +0.5f,0.5f, -(z * grid.tile_size +0.5f)};
+                transform.set_position(t_origin + relative_position);
+                transform.set_scale({grid.tile_size, h,  grid.tile_size});
+
+                shader.set("model", transform.get_model_matrix());
+                auto top = glm::mix(top_left, top_right, x / grid.width);
+                auto bottom =
+                    glm::mix(bottom_left, bottom_right, x / grid.width);
+                shader.set("cube_color",
+                           glm::mix(top, bottom, z / grid.depth));
+                glBindVertexArray(render.vao);
+                glDrawArrays(GL_TRIANGLES, 0, render.vertices_number);
+                glBindVertexArray(0);
+            }
+        }
+
+        transform.set_position(std::move(t_origin));
+        transform.set_scale({1.f, 1.f, 1.f});
+    }
 }
 
 const gsl::not_null<const GLFWwindow*> renderer::get_glfw_window() const
@@ -182,7 +243,7 @@ glm::vec2 renderer::get_viewport() const
     return viewport_;
 }
 
-void renderer::update(const entt::registry& entities,
+void renderer::update(entt::registry& entities,
                       resource::shaders_manager& shaders_manager,
                       const glm::mat4& view_matrix,
                       const glm::mat4& projection_matrix) const
@@ -190,8 +251,9 @@ void renderer::update(const entt::registry& entities,
     glClearColor(40.f / 256, 0.f / 256, 75.f / 256, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    display_control_cube(shaders_manager, view_matrix, projection_matrix);
+    // display_control_cube(shaders_manager, view_matrix, projection_matrix);
     render_unit_axes_(shaders_manager, view_matrix, projection_matrix);
+    render_grids_(entities, shaders_manager, view_matrix, projection_matrix);
 
     glfwSwapBuffers(glfw_window_);
 }

@@ -26,7 +26,7 @@ void camera::update_matrices_()
     auto up      = orientation_ * y_unit;
     view_        = glm::lookAt(position_, position_ + forward, up);
     projection_  = glm::perspective(
-        glm::radians(45.f), viewport_.x / viewport_.y, 0.1f, 100.f);
+        glm::radians(45.f), viewport_.x / viewport_.y, 0.00001f, 100.f);
 }
 
 void camera::initialize(const glm::vec3& look_from,
@@ -54,6 +54,7 @@ void camera::operator()(input_commands::change_camera_target& c)
     orientation_    = glm::normalize(yaw_quat * pitch_quat * orientation_);
     update_matrices_();
 }
+
 
 void camera::operator()(input_commands::change_position& c)
 {

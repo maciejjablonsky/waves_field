@@ -18,35 +18,45 @@ set(CMAKE_CXX_MODULES ON)
 
 add_executable(waves_field)
 target_sources(waves_field PUBLIC
+	src/systems/input.cpp
     src/app.cpp
+    src/clock.cpp
     src/config.cpp
     src/main.cpp
     src/resource/shaders_manager.cpp
-    src/utils.cpp
-    src/systems/renderer.cpp
-    src/systems/pc_input.cpp
-	src/systems/input.cpp
     src/systems/camera.cpp
+    src/systems/pc_input.cpp
+    src/systems/renderer.cpp
+    src/systems/waves.cpp
+    src/utils.cpp
+    src/components/grid.cpp
+    src/components/transform.cpp
+    src/components/render.cpp
+    src/components/mesh.cpp
 
     PUBLIC
     FILE_SET HEADERS 
     BASE_DIRS src
     FILES
+		src/systems/camera.hpp
+		src/systems/input.hpp
         src/app.hpp
-        src/glfw_glad.hpp
+        src/clock.hpp
         src/components/grid.hpp
+        src/components/grid.hpp
+        src/components/transform.hpp
         src/config.hpp
-        src/systems/renderer.hpp
-        src/systems/pc_input.hpp
-        src/utils.hpp
+        src/glfw_glad.hpp
         src/resource/shaders_manager.hpp
         src/scene.hpp
-        src/components/transform.hpp
-		src/systems/input.hpp
-		src/systems/camera.hpp
-        src/systems/unit_axes.hpp
-        
         src/systems/input_command.hpp
+        src/systems/pc_input.hpp
+        src/systems/renderer.hpp
+        src/systems/unit_axes.hpp
+        src/systems/waves.hpp
+        src/utils.hpp
+        src/components/render.hpp
+		src/components/mesh.hpp
 )
 
 target_link_libraries(waves_field PRIVATE fmt::fmt glfw glad::glad glm::glm rapidjson EnTT::EnTT tinyobjloader::tinyobjloader Microsoft.GSL::GSL magic_enum::magic_enum)
@@ -67,3 +77,5 @@ set(RESOURCE_DIRECTORY ${CMAKE_SOURCE_DIR}/resource)
 configure_file(resource/waves_scene.json.in waves_scene.json @ONLY)
 add_custom_target(waves_scene_dependency DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/waves_scene.json)
 add_dependencies(waves_field waves_scene_dependency)
+
+target_compile_definitions(waves_field PRIVATE "RESOURCE_DIRECTORY=\"${RESOURCE_DIRECTORY}\"")
