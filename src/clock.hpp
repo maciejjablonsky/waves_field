@@ -6,8 +6,8 @@ namespace wf
 class clock
 {
   private:
-    std::chrono::time_point<std::chrono::steady_clock> last_;
-    std::chrono::time_point<std::chrono::steady_clock> current_;
+    std::chrono::time_point<std::chrono::high_resolution_clock> last_;
+    std::chrono::time_point<std::chrono::high_resolution_clock> current_;
 
   public:
     std::chrono::microseconds delta() const;

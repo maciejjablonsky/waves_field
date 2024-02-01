@@ -1,4 +1,5 @@
 #include "clock.hpp"
+#include <GLFW/glfw3.h>
 
 namespace wf
 {
@@ -6,7 +7,7 @@ namespace wf
 void clock::tick()
 {
     last_    = current_;
-    current_ = std::chrono::steady_clock::now();
+    current_ = std::chrono::high_resolution_clock::now();
 }
 
 std::chrono::microseconds clock::delta() const

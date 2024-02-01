@@ -11,7 +11,6 @@ int grid::x_tiles() const
 
 int grid::z_tiles() const
 {
-
     return std::floor(depth / tile_size);
 }
 

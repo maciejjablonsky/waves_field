@@ -10,9 +10,9 @@ namespace wf::systems
 void waves::update(entt::registry& entities, const clock& clock)
 {
     auto view               = entities.view<components::grid>();
-    const float wave_speed  = -4.0f;  // Speed of wave propagation
-    const float wave_length = 10.0f;  // Wavelength of the waves
-    const float wave_height = 10.0f; // Maximum height of the waves
+    const float wave_speed  = -4.0f; // Speed of wave propagation
+    const float wave_length = 10.0f; // Wavelength of the waves
+    const float wave_height = 2.0f; // Maximum height of the waves
     const float frequency   = std::numbers::pi / wave_length;
 
     float dt = clock.delta().count() / 1e6;
@@ -31,8 +31,9 @@ void waves::update(entt::registry& entities, const clock& clock)
                 auto distance = glm::length(
                     glm::vec3{x, 0.f, z} * grid.tile_size - stone_throw_point);
 
-                float wave =
-                    wave_height * cos(frequency * distance + wave_speed * clock.current().count() / 1e6);
+                float wave = wave_height *
+                             cos(frequency * distance +
+                                 wave_speed * clock.current().count() / 1e6);
                 float damping =
                     std::exp(-0.1f * distance) * std::exp(-0.05f * dt) * 3;
                 heights[std::array{x, z}] = wave * damping;

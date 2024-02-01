@@ -12,6 +12,8 @@ find_package(EnTT REQUIRED CONFIG)
 find_package(tinyobjloader REQUIRED CONFIG)
 find_package(Microsoft.GSL REQUIRED CONFIG)
 find_package(magic_enum REQUIRED CONFIG)
+find_package(boost REQUIRED CONFIG)
+find_package(freetype REQUIRED CONFIG)
 
 message(STATUS "${CMAKE_VERSION} ")
 set(CMAKE_CXX_MODULES ON)
@@ -59,7 +61,7 @@ target_sources(waves_field PUBLIC
 		src/components/mesh.hpp
 )
 
-target_link_libraries(waves_field PRIVATE fmt::fmt glfw glad::glad glm::glm rapidjson EnTT::EnTT tinyobjloader::tinyobjloader Microsoft.GSL::GSL magic_enum::magic_enum)
+target_link_libraries(waves_field PRIVATE fmt::fmt glfw glad::glad glm::glm rapidjson EnTT::EnTT tinyobjloader::tinyobjloader Microsoft.GSL::GSL magic_enum::magic_enum Boost::headers Freetype::Freetype)
 
 
 install(TARGETS waves_field DESTINATION "."
@@ -79,3 +81,17 @@ add_custom_target(waves_scene_dependency DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/wav
 add_dependencies(waves_field waves_scene_dependency)
 
 target_compile_definitions(waves_field PRIVATE "RESOURCE_DIRECTORY=\"${RESOURCE_DIRECTORY}\"")
+
+if (MSVC)
+    target_compile_options(waves_field PRIVATE
+        $<$<CONFIG:Release>:/O2> # Maximize speed
+        $<$<CONFIG:Release>:/Oi> # Enable intrinsic functions
+        $<$<CONFIG:Release>:/Ot> # Favor fast code
+        $<$<CONFIG:Release>:/Oy> # Omit frame pointers
+        $<$<CONFIG:Release>:/Ob2> # Inline function expansion
+        $<$<CONFIG:Release>:/GL> # Whole program optimization
+    )
+    target_link_options(waves_field PRIVATE
+        $<$<CONFIG:Release>:/LTCG> # Link-time code generation for Release
+    )
+endif()

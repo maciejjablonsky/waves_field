@@ -1,10 +1,15 @@
 #include "app.hpp"
+#include <algorithm>
+#include <boost/circular_buffer.hpp>
 #include <clock.hpp>
 #include <components/grid.hpp>
 #include <components/mesh.hpp>
 #include <components/render.hpp>
 #include <components/transform.hpp>
+#include <fmt/chrono.h>
 #include <fmt/format.h>
+#include <fmt/std.h>
+#include <numeric>
 #include <resource/shaders_manager.hpp>
 #include <systems/camera.hpp>
 #include <systems/waves.hpp>
@@ -18,15 +23,15 @@ void create_waves_entity(entt::registry& entities,
     auto& transform    = entities.emplace<components::transform>(entity);
     transform.position = {0.f, 0.f, 0.f};
 
-    auto& grid = entities.emplace<components::grid>(entity);
+    auto& grid     = entities.emplace<components::grid>(entity);
     grid.tile_size = 1;
-    grid.set_resolution(100.f, 100.f);
+    grid.set_resolution(40.f, 40.f);
 
     auto& render = entities.emplace<components::render>(
         entity, shaders_manager.get("control_cube"));
 
     auto& mesh = entities.emplace<components::mesh>(
-        entity,render, std::filesystem::path{RESOURCE_DIRECTORY} / "cube.obj");
+        entity, render, std::filesystem::path{RESOURCE_DIRECTORY} / "cube.obj");
 }
 
 app::app()
@@ -55,6 +60,7 @@ app::app()
     while (true)
     {
         clock.tick();
+
         input.update(entities);
         if (not input.is_window_open())
             break;
@@ -63,7 +69,8 @@ app::app()
         renderer.update(entities,
                         shaders_manager,
                         std::as_const(camera).get_view(),
-                        std::as_const(camera).get_projection());
+                        std::as_const(camera).get_projection(),
+                        clock.delta());
     }
 }
 } // namespace wf

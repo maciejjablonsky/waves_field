@@ -15,6 +15,10 @@ class waves_field(ConanFile):
 
     exports_sources = "CMakeLists.txt", "src/*"
 
+    default_options = {
+        'boost/*:header_only': True
+    }
+
     def layout(self):
         cmake_layout(self)
 
@@ -32,6 +36,8 @@ class waves_field(ConanFile):
         self.requires("ms-gsl/4.0.0")
         # self.requires("mp-units/2.1.0")
         self.requires("magic_enum/0.9.5")
+        self.requires("freetype/2.13.2")
+        self.requires("boost/1.84.0")
 
     def generate(self):
         deps = CMakeDeps(self)
