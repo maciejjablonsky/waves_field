@@ -8,16 +8,6 @@
 #include <systems/input_command.hpp>
 #include <utils.hpp>
 
-template <> struct fmt::formatter<glm::vec3> : fmt::formatter<std::string>
-{
-    auto format(const glm::vec3& v, format_context& ctx) const
-    {
-        auto it = ctx.out();
-        it      = std::format_to(it, "[x: {}, y: {}, z: {}]", v.x, v.y, v.z);
-        return it;
-    }
-};
-
 namespace wf::systems
 {
 void camera::update_matrices_()
@@ -26,7 +16,7 @@ void camera::update_matrices_()
     auto up      = orientation_ * y_unit;
     view_        = glm::lookAt(position_, position_ + forward, up);
     projection_  = glm::perspective(
-        glm::radians(45.f), viewport_.x / viewport_.y, 0.00001f, 100.f);
+        glm::radians(zoom_), viewport_.x / viewport_.y, 0.00001f, 100.f);
 }
 
 void camera::initialize(const glm::vec3& look_from,
@@ -61,6 +51,13 @@ void camera::operator()(input_commands::change_position& c)
     c.mark_as_executed();
     float velocity = 0.1;
     position_ += velocity * glm::normalize(orientation_ * c.direction);
+    update_matrices_();
+}
+
+void camera::operator()(input_commands::change_camera_zoom& c)
+{
+    zoom_ -= c.offset.y;
+    zoom_ = std::clamp(zoom_, 0.f, 45.f);
     update_matrices_();
 }
 

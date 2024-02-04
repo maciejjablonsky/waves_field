@@ -51,8 +51,10 @@ void wf::systems::input::cursor_position_callback_(GLFWwindow* glfw_window,
 
 void wf::systems::input::process_mouse_scroll_(double x_offset, double y_offset)
 {
-    fmt::print(
-        "[input_system] mouse scroll event: {}[x] {}[y]\n", x_offset, y_offset);
+    input_commands::change_camera_zoom c;
+    c.offset.x = x_offset;
+    c.offset.y = y_offset;
+    commands_.emplace_back(c);
 }
 
 void wf::systems::input::mouse_scroll_callback_(GLFWwindow* glfw_window,

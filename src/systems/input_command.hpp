@@ -35,9 +35,14 @@ struct change_camera_target : command
 struct close_window : command
 {
 };
+
+struct change_camera_zoom : command
+{
+    glm::vec2 offset;
+};
 } // namespace input_commands
 
-using input_command = std::variant<input_commands::change_camera_target, input_commands::close_window, input_commands::change_position>;
+using input_command = std::variant<input_commands::change_camera_target, input_commands::close_window, input_commands::change_position, input_commands::change_camera_zoom>;
 
 
 template <typename T>

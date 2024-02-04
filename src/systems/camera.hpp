@@ -16,6 +16,7 @@ class camera
     glm::mat4 view_;
     glm::mat4 projection_;
     glm::vec2 viewport_;
+    float zoom_{45.f};
 
     void update_matrices_();
     void update_vectors_();
@@ -26,6 +27,7 @@ class camera
                     const glm::vec2& viewport);
     void operator()(input_commands::change_camera_target& c);
     void operator()(input_commands::change_position& c);
+    void operator()(input_commands::change_camera_zoom& c);
     void operator()(const auto& any_command)
     {
         // empty visitor for broadcasted commands
