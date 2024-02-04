@@ -50,7 +50,6 @@ target_sources(waves_field PUBLIC
         src/config.hpp
         src/glfw_glad.hpp
         src/resource/shaders_manager.hpp
-        src/scene.hpp
         src/systems/input_command.hpp
         src/systems/pc_input.hpp
         src/systems/renderer.hpp

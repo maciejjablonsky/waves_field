@@ -1,13 +1,12 @@
 #include <components/mesh.hpp>
+#include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <tiny_obj_loader.h>
-#include <glad/glad.h>
-
 
 namespace wf::components
 {
 std::vector<mesh_vertex> make_vertex_data(const tinyobj::shape_t& shape,
-                                     const tinyobj::attrib_t& attribute)
+                                          const tinyobj::attrib_t& attribute)
 {
     std::vector<mesh_vertex> vertices;
     vertices.reserve(shape.mesh.indices.size());
@@ -22,7 +21,8 @@ std::vector<mesh_vertex> make_vertex_data(const tinyobj::shape_t& shape,
     return vertices;
 }
 
-mesh::mesh(components::render& render_component, const std::filesystem::path& mesh_path)
+mesh::mesh(components::render& render_component,
+           const std::filesystem::path& mesh_path)
 {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -45,16 +45,32 @@ mesh::mesh(components::render& render_component, const std::filesystem::path& me
     render_component.vertices_number = cpu_vertex_buffer_data.size();
 }
 
-void mesh::cpu_to_gpu_vertex_buffer(GLuint vao, const std::vector<mesh_vertex>& cpu_data)
+void mesh::cpu_to_gpu_vertex_buffer(GLuint vao,
+                                    const std::vector<mesh_vertex>& cpu_data)
 {
-    glGenBuffers(1, std::addressof(vbo_));
-
     glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glBufferData(GL_ARRAY_BUFFER, cpu_data.size() * sizeof(mesh_vertex), cpu_data.data(), GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
-    glEnableVertexAttribArray(0);
+    if (not vbo_.has_value())
+    {
+        uint32_t vbo{};
+        glGenBuffers(1, std::addressof(vbo));
+        vbo_ = vbo;
+        glBindBuffer(GL_ARRAY_BUFFER, *vbo_);
+        glBufferData(GL_ARRAY_BUFFER,
+                     cpu_data.size() * sizeof(mesh_vertex),
+                     cpu_data.data(),
+                     GL_STATIC_DRAW);
+        glVertexAttribPointer(
+            0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+        glEnableVertexAttribArray(0);
+    }
+    else
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, *vbo_);
+        glBufferSubData(GL_ARRAY_BUFFER,
+                        0,
+                        cpu_data.size() * sizeof(mesh_vertex),
+                        cpu_data.data());
+    }
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

@@ -161,24 +161,27 @@ void renderer::render_unit_axes_(resource::shaders_manager& shaders_manager,
                                  const glm::mat4& view_matrix,
                                  const glm::mat4& projection_matrix) const
 {
-    std::array vertices = {0.f,
-                           0.f,
-                           0.f,
-                           1.f,
-                           0.f,
-                           0.f,
-                           0.f,
-                           0.f,
-                           0.f,
-                           0.f,
-                           1.f,
-                           0.f,
-                           0.f,
-                           0.f,
-                           0.f,
-                           0.f,
-                           0.f,
-                           -1.f};
+    std::array vertices = {
+        // X-axis (red)
+                           0.0f,
+                           0.0f,
+                           0.0f,
+                           1.0f, 0.f, 0.f,
+                           // Y-axis (green)
+                           0.0f,
+                           0.0f,
+                           0.0f,
+                           0.0f,
+                           1.0f,
+                           0.0f,
+                           // Z-axis (blue)
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f
+                          };
 
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -265,11 +268,10 @@ void renderer::render_grids_(entt::registry& entities,
                              const glm::mat4& projection_matrix) const
 {
     auto view = entities.view<components::transform,
-                              components::render,
-                              components::grid>();
+                              components::render
+                              >();
     for (auto entity : view)
     {
-        auto& grid      = view.get<components::grid>(entity);
         auto& render    = view.get<components::render>(entity);
         auto& transform = view.get<components::transform>(entity);
         auto& shader    = render.shader.get();
@@ -277,38 +279,12 @@ void renderer::render_grids_(entt::registry& entities,
         shader.use();
         shader.set("view", view_matrix);
         shader.set("projection", projection_matrix);
-
-        auto t_origin          = transform.position;
-        auto heights           = grid.heights();
-        glm::vec3 top_right    = {1.f, 0.f, 0.f};
-        glm::vec3 top_left     = {0.f, 1.f, 0.f};
-        glm::vec3 bottom_right = {0.f, 0.f, 0.2f};
-        glm::vec3 bottom_left  = {1.f, 1.f, 0.f};
-
-        for (int x = 0; x < grid.x_tiles(); ++x)
-        {
-            for (int z = 0; z < grid.z_tiles(); ++z)
-            {
-                float h                     = heights[std::array{x, z}];
-                glm::vec3 relative_position = {x * grid.tile_size * 0.5f + 0.5f,
-                                               0.5f,
-                                               -(z * grid.tile_size * 0.5f + 0.5f)};
-                transform.set_position(t_origin + relative_position);
-                transform.set_scale({grid.tile_size, h, grid.tile_size});
-
-                shader.set("model", transform.get_model_matrix());
-                auto top = glm::mix(top_left, top_right, x / grid.width);
-                auto bottom =
-                    glm::mix(bottom_left, bottom_right, x / grid.width);
-                shader.set("cube_color", glm::mix(top, bottom, z / grid.depth));
-                glBindVertexArray(render.vao);
-                glDrawArrays(GL_TRIANGLES, 0, render.vertices_number);
-                glBindVertexArray(0);
-            }
-        }
-
-        transform.set_position(std::move(t_origin));
-        transform.set_scale({1.f, 1.f, 1.f});
+        shader.set("model", transform.get_model_matrix());
+        
+        shader.set("cube_color", glm::vec3{0xff , 0x86, 0xc8} / 256.f);
+        glBindVertexArray(render.vao);
+        glDrawArrays(GL_TRIANGLES, 0, render.vertices_number);
+        glBindVertexArray(0);
     }
 }
 
@@ -343,11 +319,11 @@ void renderer::update(entt::registry& entities,
     render_text(shaders_manager.get("text"),
                 fmt::format("{:5.1f} fps", perf_.fps()),
                 10,
-                static_cast<int>(viewport_.y- 50),
+                static_cast<int>(viewport_.y - 50),
                 0.7,
                 {1.f, 0.f, 0.f});
-     //display_control_cube(shaders_manager, view_matrix, projection_matrix);
-    render_unit_axes_(shaders_manager, view_matrix, projection_matrix);
+    // display_control_cube(shaders_manager, view_matrix, projection_matrix);
+     render_unit_axes_(shaders_manager, view_matrix, projection_matrix);
     render_grids_(entities, shaders_manager, view_matrix, projection_matrix);
 
     glfwSwapBuffers(glfw_window_);

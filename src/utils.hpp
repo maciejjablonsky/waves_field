@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <concepts>
 #include <cstdio>
+#include <glm/glm.hpp>
+#include <fmt/format.h>
 
 namespace wf
 {
@@ -52,3 +54,13 @@ class unimplemented_error : public std::exception
 template<class... Ts>
 struct overloaded : Ts... { using Ts::operator()...; };
 }
+
+template <> struct fmt::formatter<glm::vec3> : fmt::formatter<std::string>
+{
+    auto format(const glm::vec3& v, format_context& ctx) const
+    {
+        auto it = ctx.out();
+        it      = std::format_to(it, "[x: {}, y: {}, z: {}]", v.x, v.y, v.z);
+        return it;
+    }
+};

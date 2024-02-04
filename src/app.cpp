@@ -21,17 +21,16 @@ void create_waves_entity(entt::registry& entities,
 {
     auto entity        = entities.create();
     auto& transform    = entities.emplace<components::transform>(entity);
-    transform.position = {0.f, 0.f, 0.f};
 
     auto& grid     = entities.emplace<components::grid>(entity);
-    grid.tile_size = 1;
-    grid.set_resolution(40.f, 40.f);
+    grid.tile_size = 0.2f;
+    grid.set_resolution(100.f, 100.f);
 
     auto& render = entities.emplace<components::render>(
         entity, shaders_manager.get("control_cube"));
 
     auto& mesh = entities.emplace<components::mesh>(
-        entity, render, std::filesystem::path{RESOURCE_DIRECTORY} / "cube.obj");
+        entity, render, grid, [](float x, float y) { return 0.f; });
 }
 
 app::app()
