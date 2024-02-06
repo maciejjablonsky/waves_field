@@ -39,5 +39,6 @@ class camera
     }
     const glm::mat4& get_view() const;
     const glm::mat4& get_projection() const;
+    const glm::vec3& get_position() const;
 };
 } // namespace wf::systems

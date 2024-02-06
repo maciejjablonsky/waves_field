@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <magic_enum/magic_enum.hpp>
+#include <systems/unit_axes.hpp>
 #include <utils.hpp>
 
 namespace wf::components
@@ -12,6 +13,7 @@ namespace wf::components
 struct mesh_vertex
 {
     glm::vec3 position;
+    glm::vec3 normal;
 };
 
 template <typename T>
@@ -37,52 +39,98 @@ class mesh : wf::non_copyable
                 const components::grid& grid_component,
                 wave_function auto height)
     {
+        using systems::x_unit;
+        using systems::y_unit;
+        using systems::z_unit;
         vertices_.clear();
 
         auto tile       = grid_component.tile_size;
         auto half_tile  = tile / 2;
         auto half_width = grid_component.width / 2;
         auto half_depth = grid_component.depth / 2;
+        vertices_.reserve(18 * ((grid_component.width / tile) + 1) *
+                          ((grid_component.depth / tile) + 1));
+
         for (float x = -half_width; x < half_width; x += tile)
         {
             for (float z = -half_depth; z < half_depth; z += tile)
             {
                 // up face
                 auto up_y = height(x + half_tile, z + half_tile);
-                vertices_.emplace_back<glm::vec3>({x, up_y, z});
-                vertices_.emplace_back<glm::vec3>({x, up_y, z + tile});
-                vertices_.emplace_back<glm::vec3>({x + tile, up_y, z + tile});
+                vertices_.emplace_back<glm::vec3>({x, up_y, z}, y_unit);
+                vertices_.emplace_back<glm::vec3>({x, up_y, z + tile}, y_unit);
+                vertices_.emplace_back<glm::vec3>({x + tile, up_y, z + tile},
+                                                  y_unit);
 
-                vertices_.emplace_back<glm::vec3>({x + tile, up_y, z + tile});
-                vertices_.emplace_back<glm::vec3>({x + tile, up_y, z});
-                vertices_.emplace_back<glm::vec3>({x, up_y, z});
+                vertices_.emplace_back<glm::vec3>({x + tile, up_y, z + tile},
+                                                  y_unit);
+                vertices_.emplace_back<glm::vec3>({x + tile, up_y, z}, y_unit);
+                vertices_.emplace_back<glm::vec3>({x, up_y, z}, y_unit);
 
                 // north face
                 if (auto north_y = height(x + half_tile, z - tile + half_tile);
                     up_y >= north_y)
                 {
-                    vertices_.emplace_back<glm::vec3>({x, north_y, z});
-                    vertices_.emplace_back<glm::vec3>({x + tile, north_y, z});
-                    vertices_.emplace_back<glm::vec3>({x + tile, up_y, z});
+                    vertices_.emplace_back<glm::vec3>({x, up_y, z}, -z_unit);
+                    vertices_.emplace_back<glm::vec3>({x + tile, up_y, z},
+                                                      -z_unit);
+                    vertices_.emplace_back<glm::vec3>({x + tile, north_y, z},
+                                                      -z_unit);
 
-                    vertices_.emplace_back<glm::vec3>({x + tile, up_y, z});
-                    vertices_.emplace_back<glm::vec3>({x, up_y, z});
-                    vertices_.emplace_back<glm::vec3>({x, north_y, z});
+                    vertices_.emplace_back<glm::vec3>({x + tile, north_y, z},
+                                                      -z_unit);
+                    vertices_.emplace_back<glm::vec3>({x, north_y, z}, -z_unit);
+                    vertices_.emplace_back<glm::vec3>({x, up_y, z}, -z_unit);
                 }
                 if (auto neighbour_south_y =
                         height(x + half_tile, z - tile + half_tile);
                     neighbour_south_y > up_y)
                 {
-                    vertices_.emplace_back<glm::vec3>(
-                        {x, neighbour_south_y, z});
-                    vertices_.emplace_back<glm::vec3>({x, up_y, z});
-                    vertices_.emplace_back<glm::vec3>({x + tile, up_y, z});
+                    vertices_.emplace_back<glm::vec3>({x, neighbour_south_y, z},
+                                                      z_unit);
+                    vertices_.emplace_back<glm::vec3>({x, up_y, z}, z_unit);
+                    vertices_.emplace_back<glm::vec3>({x + tile, up_y, z},
+                                                      z_unit);
 
-                    vertices_.emplace_back<glm::vec3>({x + tile, up_y, z});
+                    vertices_.emplace_back<glm::vec3>({x + tile, up_y, z},
+                                                      z_unit);
                     vertices_.emplace_back<glm::vec3>(
-                        {x + tile, neighbour_south_y, z});
+                        {x + tile, neighbour_south_y, z}, z_unit);
+                    vertices_.emplace_back<glm::vec3>({x, neighbour_south_y, z},
+                                                      z_unit);
+                }
+
+                if (auto west_y = height(x + half_tile - tile, z + half_tile);
+                    up_y >= west_y)
+                {
+                    vertices_.emplace_back<glm::vec3>({x, up_y, z + tile},
+                                                      -x_unit);
+                    vertices_.emplace_back<glm::vec3>({x, up_y, z}, -x_unit);
+                    vertices_.emplace_back<glm::vec3>({x, west_y, z}, -x_unit);
+
+                    vertices_.emplace_back<glm::vec3>({x, west_y, z}, -x_unit);
+                    vertices_.emplace_back<glm::vec3>({x, west_y, z + tile},
+                                                      -x_unit);
+                    vertices_.emplace_back<glm::vec3>({x, up_y, z + tile},
+                                                      -x_unit);
+                }
+                if (auto neighbour_east_y =
+                        height(x + half_tile - tile, z + half_tile);
+                    neighbour_east_y > up_y)
+                {
+
+                    vertices_.emplace_back<glm::vec3>({x, up_y, z + tile},
+                                                      x_unit);
+                    vertices_.emplace_back<glm::vec3>({x, up_y, z}, x_unit);
+                    vertices_.emplace_back<glm::vec3>({x, neighbour_east_y, z},
+                                                      x_unit);
+
+                    vertices_.emplace_back<glm::vec3>({x, neighbour_east_y, z},
+                                                      x_unit);
                     vertices_.emplace_back<glm::vec3>(
-                        {x, neighbour_south_y, z});
+                        {x, neighbour_east_y, z + tile}, x_unit);
+                    vertices_.emplace_back<glm::vec3>({x, up_y, z + tile},
+                                                      x_unit);
                 }
             }
         }

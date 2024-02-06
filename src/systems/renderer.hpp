@@ -7,7 +7,6 @@
 #include <numeric>
 #include <resource/shaders_manager.hpp>
 
-
 namespace wf::systems
 {
 struct Character
@@ -20,7 +19,7 @@ struct Character
 
 struct perf_meter
 {
-    float sum_ = 0.f;
+    float sum_  = 0.f;
     int frames_ = 0.f;
     float fps_{};
     std::chrono::microseconds time_{};
@@ -35,8 +34,8 @@ struct perf_meter
         if (update_step_ > 1.f)
         {
             auto avg     = sum_ / frames_;
-            time_ = std::chrono::microseconds{static_cast<int>(avg)};
-            fps_  = 1e6 / avg;
+            time_        = std::chrono::microseconds{static_cast<int>(avg)};
+            fps_         = 1e6 / avg;
             sum_         = 0.f;
             frames_      = 0;
             update_step_ = 0.f;
@@ -74,7 +73,8 @@ class renderer
     void render_grids_(entt::registry& entities,
                        resource::shaders_manager& shaders_manager,
                        const glm::mat4& view_matrix,
-                       const glm::mat4& projection_matrix) const;
+                       const glm::mat4& projection_matrix,
+                       const glm::vec3& camera_position) const;
     void init_ft_();
 
   public:
@@ -87,7 +87,8 @@ class renderer
                 resource::shaders_manager& shaders_manager,
                 const glm::mat4& view_matrix,
                 const glm::mat4& projection_matrix,
-                std::chrono::microseconds delta) const;
+                std::chrono::microseconds delta,
+                const glm::vec3& camera_position) const;
     void render_text(wf::resource::shader_program& text_shader,
                      const std::string& text,
                      float x,

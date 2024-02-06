@@ -19,15 +19,15 @@ namespace wf
 void create_waves_entity(entt::registry& entities,
                          resource::shaders_manager& shaders_manager)
 {
-    auto entity        = entities.create();
-    auto& transform    = entities.emplace<components::transform>(entity);
+    auto entity     = entities.create();
+    auto& transform = entities.emplace<components::transform>(entity);
 
     auto& grid     = entities.emplace<components::grid>(entity);
-    grid.tile_size = 0.2f;
-    grid.set_resolution(100.f, 100.f);
+    grid.tile_size = 1.f;
+    grid.set_resolution(99.f, 99.f);
 
     auto& render = entities.emplace<components::render>(
-        entity, shaders_manager.get("control_cube"));
+        entity, shaders_manager.get("phong_light"));
 
     auto& mesh = entities.emplace<components::mesh>(
         entity, render, grid, [](float x, float y) { return 0.f; });
@@ -63,13 +63,15 @@ app::app()
         input.update(entities);
         if (not input.is_window_open())
             break;
+        clock.update(input.get_mutable_commands_to_be_executed());
         waves.update(entities, clock);
         camera.update(input.get_mutable_commands_to_be_executed());
         renderer.update(entities,
                         shaders_manager,
                         std::as_const(camera).get_view(),
                         std::as_const(camera).get_projection(),
-                        clock.delta());
+                        clock.delta(),
+                        camera.get_position());
     }
 }
 } // namespace wf

@@ -1,6 +1,6 @@
 #pragma once
-#include <variant>
 #include <glm/glm.hpp>
+#include <variant>
 
 namespace wf::systems
 {
@@ -40,12 +40,19 @@ struct change_camera_zoom : command
 {
     glm::vec2 offset;
 };
+
+struct toggle_global_clock : command
+{
+};
 } // namespace input_commands
 
-using input_command = std::variant<input_commands::change_camera_target, input_commands::close_window, input_commands::change_position, input_commands::change_camera_zoom>;
-
+using input_command = std::variant<input_commands::change_camera_target,
+                                   input_commands::close_window,
+                                   input_commands::change_position,
+                                   input_commands::change_camera_zoom,
+                                   input_commands::toggle_global_clock>;
 
 template <typename T>
 concept input_commands_view = std::ranges::view<T> &&
-                       std::same_as<std::ranges::range_value_t<T>, input_command>;
+    std::same_as<std::ranges::range_value_t<T>, input_command>;
 } // namespace wf::systems

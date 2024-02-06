@@ -59,9 +59,23 @@ void mesh::cpu_to_gpu_vertex_buffer(GLuint vao,
                      cpu_data.size() * sizeof(mesh_vertex),
                      cpu_data.data(),
                      GL_STATIC_DRAW);
+
         glVertexAttribPointer(
-            0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+            0,
+            3,
+            GL_FLOAT,
+            GL_FALSE,
+            sizeof(mesh_vertex),
+            reinterpret_cast<const void*>(offsetof(mesh_vertex, position)));
         glEnableVertexAttribArray(0);
+        glVertexAttribPointer(
+            1,
+            3,
+            GL_FLOAT,
+            GL_FALSE,
+            sizeof(mesh_vertex),
+            reinterpret_cast<const void*>(offsetof(mesh_vertex, normal)));
+        glEnableVertexAttribArray(1);
     }
     else
     {

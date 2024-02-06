@@ -161,12 +161,13 @@ void renderer::render_unit_axes_(resource::shaders_manager& shaders_manager,
                                  const glm::mat4& view_matrix,
                                  const glm::mat4& projection_matrix) const
 {
-    std::array vertices = {
-        // X-axis (red)
+    std::array vertices = {// X-axis (red)
                            0.0f,
                            0.0f,
                            0.0f,
-                           1.0f, 0.f, 0.f,
+                           1.0f,
+                           0.f,
+                           0.f,
                            // Y-axis (green)
                            0.0f,
                            0.0f,
@@ -175,13 +176,12 @@ void renderer::render_unit_axes_(resource::shaders_manager& shaders_manager,
                            1.0f,
                            0.0f,
                            // Z-axis (blue)
-        0.0f,
-        0.0f,
-        0.0f,
-        0.0f,
-        0.0f,
-        1.0f
-                          };
+                           0.0f,
+                           0.0f,
+                           0.0f,
+                           0.0f,
+                           0.0f,
+                           1.0f};
 
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -265,11 +265,10 @@ renderer::~renderer() noexcept
 void renderer::render_grids_(entt::registry& entities,
                              resource::shaders_manager& shaders_manager,
                              const glm::mat4& view_matrix,
-                             const glm::mat4& projection_matrix) const
+                             const glm::mat4& projection_matrix,
+                             const glm::vec3& camera_position) const
 {
-    auto view = entities.view<components::transform,
-                              components::render
-                              >();
+    auto view = entities.view<components::transform, components::render>();
     for (auto entity : view)
     {
         auto& render    = view.get<components::render>(entity);
@@ -277,11 +276,14 @@ void renderer::render_grids_(entt::registry& entities,
         auto& shader    = render.shader.get();
 
         shader.use();
-        shader.set("view", view_matrix);
-        shader.set("projection", projection_matrix);
-        shader.set("model", transform.get_model_matrix());
-        
-        shader.set("cube_color", glm::vec3{0xff , 0x86, 0xc8} / 256.f);
+        shader.set("u_view", view_matrix);
+        shader.set("u_projection", projection_matrix);
+        shader.set("u_model", transform.get_model_matrix());
+
+        shader.set("lightPos", glm::vec3{50.f, 30.f, 50.f});
+	    shader.set("viewPos", camera_position);
+        shader.set("objectColor", glm::vec3{0xff, 0x86, 0xc8} / 256.f);
+        shader.set("lightColor", glm::vec3{1.f, 1.f, 1.f});
         glBindVertexArray(render.vao);
         glDrawArrays(GL_TRIANGLES, 0, render.vertices_number);
         glBindVertexArray(0);
@@ -306,7 +308,8 @@ void renderer::update(entt::registry& entities,
                       resource::shaders_manager& shaders_manager,
                       const glm::mat4& view_matrix,
                       const glm::mat4& projection_matrix,
-                      std::chrono::microseconds delta) const
+                      std::chrono::microseconds delta,
+                      const glm::vec3& camera_position) const
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     perf_.add(delta);
@@ -323,8 +326,12 @@ void renderer::update(entt::registry& entities,
                 0.7,
                 {1.f, 0.f, 0.f});
     // display_control_cube(shaders_manager, view_matrix, projection_matrix);
-     render_unit_axes_(shaders_manager, view_matrix, projection_matrix);
-    render_grids_(entities, shaders_manager, view_matrix, projection_matrix);
+    render_unit_axes_(shaders_manager, view_matrix, projection_matrix);
+    render_grids_(entities,
+                  shaders_manager,
+                  view_matrix,
+                  projection_matrix,
+                  camera_position);
 
     glfwSwapBuffers(glfw_window_);
 }

@@ -82,13 +82,18 @@ class waves_field(ConanFile):
     def _add_ninja_executable_to_cmake_presets(self, cmake_presets_path):
         cmake_presets = self._load_json_from_file(cmake_presets_path)
         ninja_path = self.dependencies.build["ninja"].cpp_info.bindirs[0]
-        self.output.info(
-            f'Setting "ninjaExecutable" in {cmake_presets_path} to "{ninja_path}"'
-        )
+        system_path = os.environ.get("PATH", "")  # Get the current system PATH
+
+        new_path = ninja_path
+        if system_path:
+            new_path += os.pathsep + system_path
         for configuration_preset in cmake_presets["configurePresets"]:
-            configuration_preset["ninjaExecutable"] = os.path.join(
-                ninja_path, "ninja.exe"
-            )
+            if "environment" not in configuration_preset:
+                configuration_preset["environment"] = {}
+            if "PATH" in configuration_preset["environment"]:
+                configuration_preset["environment"]["PATH"] += os.pathsep + new_path
+            else:
+                configuration_preset["environment"]["PATH"] = new_path
         self._save_json_to_file(cmake_presets_path, cmake_presets)
 
     def _load_json_from_file(self, path):

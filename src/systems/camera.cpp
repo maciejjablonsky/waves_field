@@ -12,11 +12,11 @@ namespace wf::systems
 {
 void camera::update_matrices_()
 {
-    auto forward = orientation_ * z_unit;
+    auto forward = orientation_ * z_unit * -1.f;
     auto up      = orientation_ * y_unit;
     view_        = glm::lookAt(position_, position_ + forward, up);
     projection_  = glm::perspective(
-        glm::radians(zoom_), viewport_.x / viewport_.y, 0.00001f, 100.f);
+        glm::radians(zoom_), viewport_.x / viewport_.y, 0.1f, 1000.f);
 }
 
 void camera::initialize(const glm::vec3& look_from,
@@ -45,7 +45,6 @@ void camera::operator()(input_commands::change_camera_target& c)
     update_matrices_();
 }
 
-
 void camera::operator()(input_commands::change_position& c)
 {
     c.mark_as_executed();
@@ -69,5 +68,9 @@ const glm::mat4& camera::get_view() const
 const glm::mat4& camera::get_projection() const
 {
     return projection_;
+}
+const glm::vec3& camera::get_position() const
+{
+    return position_;
 }
 } // namespace wf::systems

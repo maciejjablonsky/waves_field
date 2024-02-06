@@ -1,8 +1,8 @@
 #include "input.hpp"
 #include <fmt/format.h>
 #include <magic_enum/magic_enum.hpp>
-#include <utils.hpp>
 #include <systems/unit_axes.hpp>
+#include <utils.hpp>
 
 namespace wf::systems
 {
@@ -97,15 +97,14 @@ bool is_in(auto v, std::ranges::range auto r)
     return std::ranges::find(r, v) != r.end();
 }
 
-
 std::optional<glm::vec3> direction_from_key(int key)
 {
     switch (key)
     {
     case GLFW_KEY_W:
-        return z_unit;
-    case GLFW_KEY_S:
         return -z_unit;
+    case GLFW_KEY_S:
+        return z_unit;
     case GLFW_KEY_A:
         return -x_unit;
     case GLFW_KEY_D:
@@ -124,6 +123,11 @@ void input::process_key_(int key, int scancode, int action, int mods)
     {
         commands_.emplace_back(
             std::in_place_type<input_commands::close_window>);
+    }
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    {
+        commands_.emplace_back(
+            std::in_place_type<input_commands::toggle_global_clock>);
     }
 
     if (auto maybe_direction = direction_from_key(key))
