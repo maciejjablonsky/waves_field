@@ -3,19 +3,46 @@
 #include <components/grid.hpp>
 #include <components/mesh.hpp>
 #include <components/transform.hpp>
+#include <components/wave.hpp>
 #include <numbers>
+#include <random>
 #include <systems/waves.hpp>
 
 namespace wf::systems
 {
+void waves::initialize(entt::registry& entities)
+{
+    float amplitude     = 8.f;
+    float frequency     = 0.1f;
+    constexpr int count = 32;
+    float speed         = 10.f;
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    for (int i = 0; i < count; ++i)
+    {
+        auto wave_entity = entities.create();
+        auto direction   = [&] {
+            std::uniform_real_distribution<float> dist(0, 2 * std::numbers::pi);
+            float angle = dist(rng);
+            return glm::normalize(
+                glm::vec3{std::cos(angle), 0.f, std::sin(angle)});
+        }();
+        //direction = glm::normalize(glm::vec3{1, 0, 0} + glm::vec3{0, 0, -1});
+
+        components::wave wave = {.amplitude = amplitude,
+                                 .frequency = frequency,
+                                 .speed     = speed,
+                                 .direction = direction};
+        entities.emplace<components::wave>(wave_entity, wave);
+
+        amplitude *= 0.82;
+        frequency *= 1.12;
+    }
+}
 void waves::update(entt::registry& entities, const clock& clock)
 {
     auto view =
         entities.view<components::grid, components::mesh, components::render>();
-    const float wave_speed  = 2.f; // Speed of wave propagation
-    const float wave_length = 40.f;  // Wavelength of the waves
-    const float wave_height = 20.f;  // Maximum height of the waves
-    const float frequency   = std::numbers::pi / wave_length;
 
     float dt = clock.delta().count() / 1e6;
 
@@ -25,16 +52,16 @@ void waves::update(entt::registry& entities, const clock& clock)
         auto& mesh   = view.get<components::mesh>(entity);
         auto& render = view.get<components::render>(entity);
 
-        glm::vec3 stone_throw_point{0.f, 0.f, 0.f};
-        mesh.update(render, grid, [=](float x, float z) {
-            auto distance = glm::length(glm::vec3{x, 0.f, z} /** grid.tile_size*/ -
-                                        stone_throw_point);
-            float wave =
-                wave_height * cos(frequency * distance -
-                                  wave_speed * clock.current().count() / 1e6);
-            float damping = std::exp(-0.1f * distance) * std::exp(-0.05f * dt);
+        auto waves_view = entities.view<components::wave>();
+        waves_view.each([=](auto& wave) { wave.update(dt); });
 
-            return wave * damping;
+        mesh.update_continuous(render, grid, [&](float x, float z) {
+            float wave_height = 0.f;
+            waves_view.each([&](auto& wave) {
+                wave_height += wave.height(glm::vec3(x, 0.f, z));
+            });
+
+            return wave_height;
         });
     }
 }

@@ -8,6 +8,7 @@ namespace wf::systems
 class waves
 {
   public:
+    void initialize(entt::registry& entities);
     void update(entt::registry& entities, const clock & clock);
 
 };

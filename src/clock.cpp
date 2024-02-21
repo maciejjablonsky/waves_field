@@ -26,6 +26,10 @@ void clock::operator()(wf::systems::input_commands::toggle_global_clock& c)
 
 std::chrono::microseconds clock::delta() const
 {
+    if (not running_)
+    {
+        return std::chrono::microseconds{0};
+    }
     return std::chrono::duration_cast<std::chrono::microseconds>(current_ -
                                                                  last_);
 }

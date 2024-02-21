@@ -28,7 +28,7 @@ class camera
     void operator()(input_commands::change_camera_target& c);
     void operator()(input_commands::change_position& c);
     void operator()(input_commands::change_camera_zoom& c);
-    void operator()(const auto& any_command)
+    void operator()(auto && ...)
     {
         // empty visitor for broadcasted commands
     }

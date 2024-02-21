@@ -247,7 +247,8 @@ void renderer::initialize(const renderer_config& c)
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glClearColor(40.f / 256, 0.f / 256, 75.f / 256, 1.f);
+    
+    //glClearColor(40.f / 256, 0.f / 256, 75.f / 256, 1.f);
     viewport_ = {c.width(), c.height()};
     glViewport(0, 0, viewport_.x, viewport_.y);
     glfwSwapInterval(0);
@@ -280,10 +281,10 @@ void renderer::render_grids_(entt::registry& entities,
         shader.set("u_projection", projection_matrix);
         shader.set("u_model", transform.get_model_matrix());
 
-        shader.set("lightPos", glm::vec3{50.f, 30.f, 50.f});
+        shader.set("lightPos", glm::vec3{0.f, 200.f, 0.f});
 	    shader.set("viewPos", camera_position);
-        shader.set("objectColor", glm::vec3{0xff, 0x86, 0xc8} / 256.f);
-        shader.set("lightColor", glm::vec3{1.f, 1.f, 1.f});
+        shader.set("objectColor", glm::vec3(0, 51, 102) / 256.f);
+        shader.set("lightColor", glm::vec3{252, 229, 112} / 256.f);
         glBindVertexArray(render.vao);
         glDrawArrays(GL_TRIANGLES, 0, render.vertices_number);
         glBindVertexArray(0);
