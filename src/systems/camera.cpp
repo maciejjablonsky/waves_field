@@ -1,3 +1,4 @@
+#include <components/camera.hpp>
 #include <components/transform.hpp>
 #include <fmt/format.h>
 #include <glm/glm.hpp>
@@ -10,67 +11,47 @@
 
 namespace wf::systems
 {
-void camera::update_matrices_()
+void camera::update_main_camera_(input_commands::change_camera_zoom& command,
+                                 components::camera& camera)
 {
-    auto forward = orientation_ * z_unit * -1.f;
-    auto up      = orientation_ * y_unit;
-    view_        = glm::lookAt(position_, position_ + forward, up);
-    projection_  = glm::perspective(
-        glm::radians(zoom_), viewport_.x / viewport_.y, 0.1f, 1000.f);
+    command.mark_as_executed();
+    auto zoom = camera.get_zoom();
+    zoom -= command.offset.y;
+    zoom = std::clamp(zoom, 0.f, 45.f);
+    camera.update_zoom(zoom);
 }
 
-void camera::initialize(const glm::vec3& look_from,
-                        const glm::vec3& look_at,
-                        const glm::vec2& viewport)
+void camera::update_main_camera_(input_commands::change_camera_target& command,
+                                 components::camera& camera)
 {
-    position_    = look_from;
-    orientation_ = glm::quatLookAt(glm::normalize(look_at - look_from), y_unit);
-    update_matrices_();
-    viewport_ = viewport;
-}
-
-void camera::operator()(input_commands::change_camera_target& c)
-{
-    c.mark_as_executed();
-    auto sensitive_offset = c.offset * 0.1f;
+    command.mark_as_executed();
+    auto sensitive_offset = command.offset * 0.1f;
 
     float yaw_angle   = sensitive_offset.x;
     float pitch_angle = sensitive_offset.y;
 
-    auto right = orientation_ * x_unit;
+    const auto& orientation = camera.get_orientation();
+    auto right              = orientation * x_unit;
 
     auto yaw_quat   = glm::angleAxis(glm::radians(-yaw_angle), y_unit);
     auto pitch_quat = glm::angleAxis(glm::radians(-pitch_angle), right);
-    orientation_    = glm::normalize(yaw_quat * pitch_quat * orientation_);
-    update_matrices_();
+    camera.update_orientation(
+        glm::normalize(yaw_quat * pitch_quat * orientation));
 }
 
-void camera::operator()(input_commands::change_position& c)
+void camera::initialize(const glm::vec3& look_from,
+                        const glm::vec3& look_at,
+                        entt::registry& entities)
 {
-    c.mark_as_executed();
-    float velocity = 0.1;
-    position_ += velocity * glm::normalize(orientation_ * c.direction);
-    update_matrices_();
-}
+    auto main_camera_entity = entities.create();
+    auto& transform_component =
+        entities.emplace<components::transform>(main_camera_entity);
+    transform_component.position = look_from;
 
-void camera::operator()(input_commands::change_camera_zoom& c)
-{
-    zoom_ -= c.offset.y;
-    zoom_ = std::clamp(zoom_, 0.f, 45.f);
-    update_matrices_();
-}
-
-const glm::mat4& camera::get_view() const
-{
-    return view_;
-}
-
-const glm::mat4& camera::get_projection() const
-{
-    return projection_;
-}
-const glm::vec3& camera::get_position() const
-{
-    return position_;
+    auto& camera_component =
+        entities.emplace<components::camera>(main_camera_entity);
+    camera_component.set_as_main();
+    camera_component.update_orientation(
+        glm::quatLookAt(glm::normalize(look_at - look_from), y_unit));
 }
 } // namespace wf::systems

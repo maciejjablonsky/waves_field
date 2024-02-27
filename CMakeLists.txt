@@ -23,6 +23,10 @@ target_sources(waves_field PUBLIC
 	src/systems/input.cpp
     src/app.cpp
     src/clock.cpp
+    src/components/grid.cpp
+    src/components/mesh.cpp
+    src/components/render.cpp
+    src/components/transform.cpp
     src/config.cpp
     src/main.cpp
     src/resource/shaders_manager.cpp
@@ -30,22 +34,22 @@ target_sources(waves_field PUBLIC
     src/systems/pc_input.cpp
     src/systems/renderer.cpp
     src/systems/waves.cpp
+    src/components/camera.cpp
     src/utils.cpp
-    src/components/grid.cpp
-    src/components/transform.cpp
-    src/components/render.cpp
-    src/components/mesh.cpp
 
     PUBLIC
     FILE_SET HEADERS 
     BASE_DIRS src
     FILES
+        src/components/camera.hpp
+		src/components/mesh.hpp
 		src/systems/camera.hpp
 		src/systems/input.hpp
         src/app.hpp
         src/clock.hpp
         src/components/grid.hpp
         src/components/grid.hpp
+        src/components/render.hpp
         src/components/transform.hpp
         src/config.hpp
         src/glfw_glad.hpp
@@ -56,8 +60,6 @@ target_sources(waves_field PUBLIC
         src/systems/unit_axes.hpp
         src/systems/waves.hpp
         src/utils.hpp
-        src/components/render.hpp
-		src/components/mesh.hpp
 )
 
 target_link_libraries(waves_field PRIVATE fmt::fmt glfw glad::glad glm::glm rapidjson EnTT::EnTT tinyobjloader::tinyobjloader Microsoft.GSL::GSL magic_enum::magic_enum Boost::headers Freetype::Freetype)

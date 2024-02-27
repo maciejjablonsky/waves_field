@@ -44,13 +44,18 @@ struct change_camera_zoom : command
 struct toggle_global_clock : command
 {
 };
+
+struct recompute_mvp_matrices : command
+{
+};
 } // namespace input_commands
 
 using input_command = std::variant<input_commands::change_camera_target,
                                    input_commands::close_window,
                                    input_commands::change_position,
                                    input_commands::change_camera_zoom,
-                                   input_commands::toggle_global_clock>;
+                                   input_commands::toggle_global_clock,
+                                   input_commands::recompute_mvp_matrices>;
 
 template <typename T>
 concept input_commands_view = std::ranges::view<T> &&
