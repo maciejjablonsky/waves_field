@@ -1,23 +1,23 @@
 #pragma once
-#include <string>
-#include <source_location>
-#include <filesystem>
 #include <concepts>
 #include <cstdio>
-#include <glm/glm.hpp>
+#include <filesystem>
 #include <fmt/format.h>
+#include <glm/glm.hpp>
+#include <source_location>
+#include <string>
 
 namespace wf
 {
-	
- void log(const std::string& message,
+
+void log(const std::string& message,
          const std::source_location& loc = std::source_location::current());
 
 std::string load_text_from_file(const std::filesystem::path& path);
 
 struct non_copyable
 {
-    non_copyable(const non_copyable&) = delete;
+    non_copyable(const non_copyable&)            = delete;
     non_copyable& operator=(const non_copyable&) = delete;
     non_copyable()                               = default;
     non_copyable(non_copyable&&)                 = default;
@@ -46,14 +46,20 @@ class unimplemented_error : public std::exception
 {
   private:
     std::string message_;
+
   public:
     unimplemented_error(const std::string& message);
     const char* what() const;
 };
 
-template<class... Ts>
-struct overloaded : Ts... { using Ts::operator()...; };
-}
+template <class... Ts> struct overloaded : Ts...
+{
+    using Ts::operator()...;
+};
+
+template <typename T>
+using optional_ref = std::optional<std::reference_wrapper<T>>;
+} // namespace wf
 
 template <> struct fmt::formatter<glm::vec3> : fmt::formatter<std::string>
 {

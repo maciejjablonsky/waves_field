@@ -37,6 +37,7 @@ void wf::systems::input::process_cursor_position_(double x_pos, double y_pos)
                             y_pos - last_cursor_position_->y,
                             0.}};
     commands_.push_back(std::move(command));
+    commands_.emplace_back(input_commands::recompute_mvp_matrices{});
     last_cursor_position_.emplace(x_pos, y_pos, 0.f);
 }
 
@@ -51,6 +52,7 @@ void wf::systems::input::cursor_position_callback_(GLFWwindow* glfw_window,
 
 void wf::systems::input::process_mouse_scroll_(double x_offset, double y_offset)
 {
+    commands_.emplace_back(input_commands::recompute_mvp_matrices{});
     input_commands::change_camera_zoom c;
     c.offset.x = x_offset;
     c.offset.y = y_offset;

@@ -1,4 +1,5 @@
 #include <boost/circular_buffer.hpp>
+#include <components/camera.hpp>
 #include <components/grid.hpp>
 #include <components/mesh.hpp>
 #include <components/render.hpp>
@@ -220,8 +221,12 @@ void renderer::render_unit_axes_(resource::shaders_manager& shaders_manager,
     glBindVertexArray(0);
 }
 
-void renderer::initialize(const renderer_config& c)
+void renderer::initialize(const renderer_config& c,
+                          const clock& clock,
+                          entt::registry& entities)
 {
+    clock_ = clock;
+
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -247,11 +252,15 @@ void renderer::initialize(const renderer_config& c)
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    
-    //glClearColor(40.f / 256, 0.f / 256, 75.f / 256, 1.f);
+
+    // glClearColor(40.f / 256, 0.f / 256, 75.f / 256, 1.f);
     viewport_ = {c.width(), c.height()};
     glViewport(0, 0, viewport_.x, viewport_.y);
     glfwSwapInterval(0);
+
+    const auto& [main_camera, main_camera_transform] =
+        find_main_camera(entities);
+    recompute_vp_matrices_(main_camera.get(), main_camera_transform.get());
 }
 
 renderer::~renderer() noexcept
@@ -263,11 +272,10 @@ renderer::~renderer() noexcept
     glfwTerminate();
 }
 
-void renderer::render_grids_(entt::registry& entities,
-                             resource::shaders_manager& shaders_manager,
-                             const glm::mat4& view_matrix,
-                             const glm::mat4& projection_matrix,
-                             const glm::vec3& camera_position) const
+void renderer::render_grids_(
+    entt::registry& entities,
+    resource::shaders_manager& shaders_manager,
+    const components::transform& main_camera_transform) const
 {
     auto view = entities.view<components::transform, components::render>();
     for (auto entity : view)
@@ -277,18 +285,35 @@ void renderer::render_grids_(entt::registry& entities,
         auto& shader    = render.shader.get();
 
         shader.use();
-        shader.set("u_view", view_matrix);
-        shader.set("u_projection", projection_matrix);
+        shader.set("u_view", view_matrix_);
+        shader.set("u_projection", projection_matrix_);
         shader.set("u_model", transform.get_model_matrix());
 
         shader.set("lightPos", glm::vec3{0.f, 200.f, 0.f});
-	    shader.set("viewPos", camera_position);
+        shader.set("viewPos", main_camera_transform.position);
         shader.set("objectColor", glm::vec3(0, 51, 102) / 256.f);
         shader.set("lightColor", glm::vec3{252, 229, 112} / 256.f);
         glBindVertexArray(render.vao);
         glDrawArrays(GL_TRIANGLES, 0, render.vertices_number);
         glBindVertexArray(0);
     }
+}
+
+void renderer::render_performance_(resource::shaders_manager& shaders_manager)
+{
+    perf_.add(clock_->get().delta());
+    render_text(shaders_manager.get("text"),
+                fmt::format("{:5.2} ms/frame", perf_.time().count() / 1e3),
+                10,
+                static_cast<int>(viewport_.y - 100),
+                0.7,
+                {1.f, 0.f, 0.f});
+    render_text(shaders_manager.get("text"),
+                fmt::format("{:5.1f} fps", perf_.fps()),
+                10,
+                static_cast<int>(viewport_.y - 50),
+                0.7,
+                {1.f, 0.f, 0.f});
 }
 
 const gsl::not_null<const GLFWwindow*> renderer::get_glfw_window() const
@@ -305,36 +330,18 @@ glm::vec2 renderer::get_viewport() const
     return viewport_;
 }
 
-void renderer::update(entt::registry& entities,
-                      resource::shaders_manager& shaders_manager,
-                      const glm::mat4& view_matrix,
-                      const glm::mat4& projection_matrix,
-                      std::chrono::microseconds delta,
-                      const glm::vec3& camera_position) const
+void renderer::recompute_vp_matrices_(
+    const components::camera& camera,
+    const components::transform& camera_transform)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    perf_.add(delta);
-    render_text(shaders_manager.get("text"),
-                fmt::format("{:5.2} ms/frame", perf_.time().count() / 1e3),
-                10,
-                static_cast<int>(viewport_.y - 100),
-                0.7,
-                {1.f, 0.f, 0.f});
-    render_text(shaders_manager.get("text"),
-                fmt::format("{:5.1f} fps", perf_.fps()),
-                10,
-                static_cast<int>(viewport_.y - 50),
-                0.7,
-                {1.f, 0.f, 0.f});
-    // display_control_cube(shaders_manager, view_matrix, projection_matrix);
-    render_unit_axes_(shaders_manager, view_matrix, projection_matrix);
-    render_grids_(entities,
-                  shaders_manager,
-                  view_matrix,
-                  projection_matrix,
-                  camera_position);
-
-    glfwSwapBuffers(glfw_window_);
+    auto forward = camera.get_orientation() * z_unit * -1.f;
+    auto up      = camera.get_orientation() * y_unit;
+    view_matrix_ = glm::lookAt(
+        camera_transform.position, camera_transform.position + forward, up);
+    projection_matrix_ = glm::perspective(glm::radians(camera.get_zoom()),
+                                          viewport_.x / viewport_.y,
+                                          0.1f,
+                                          1000.f);
 }
 
 void renderer::render_text(wf::resource::shader_program& s,
