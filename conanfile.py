@@ -38,6 +38,7 @@ class waves_field(ConanFile):
         self.requires("magic_enum/0.9.5")
         self.requires("freetype/2.13.2")
         self.requires("boost/1.84.0")
+        self.requires("range-v3/0.12.0")
 
     def generate(self):
         deps = CMakeDeps(self)

@@ -22,9 +22,13 @@ struct command
         executed_ = true;
     }
 };
-struct change_position : command
+struct change_player_velocity_direction : command
 {
     glm::vec3 direction;
+};
+
+struct stop_player : command
+{
 };
 
 struct change_camera_target : command
@@ -52,12 +56,14 @@ struct recompute_mvp_matrices : command
 
 using input_command = std::variant<input_commands::change_camera_target,
                                    input_commands::close_window,
-                                   input_commands::change_position,
+                                   input_commands::change_player_velocity_direction,
                                    input_commands::change_camera_zoom,
                                    input_commands::toggle_global_clock,
-                                   input_commands::recompute_mvp_matrices>;
+                                   input_commands::recompute_mvp_matrices,
+                                   input_commands::stop_player>;
 
 template <typename T>
-concept input_commands_view = std::ranges::view<T> &&
+concept input_commands_view =
+    std::ranges::view<T> &&
     std::same_as<std::ranges::range_value_t<T>, input_command>;
 } // namespace wf::systems

@@ -16,6 +16,7 @@
 #include <systems/camera.hpp>
 #include <systems/physics.hpp>
 #include <systems/waves.hpp>
+#include <systems/movement.hpp>
 
 namespace wf
 {
@@ -53,6 +54,12 @@ app::app()
     systems::input input;
     input.initialize(renderer.get_mutable_glfw_window());
 
+    systems::movement movement;
+    movement.initialize(clock);
+
+    systems::physics physics;
+    physics.initialize(clock);
+
     resource::shaders_manager shaders_manager(config.shaders());
     shaders_manager.init();
 
@@ -67,8 +74,10 @@ app::app()
         clock.tick();
         input.update(entities);
         clock.update(input.get_mutable_commands_to_be_executed());
-        waves.update(entities, clock);
         camera.update(input.get_mutable_commands_to_be_executed(), entities);
+        movement.update(input.get_mutable_commands_to_be_executed(), entities);
+        waves.update(entities, clock);
+        physics.update(entities);
         renderer.update(input.get_mutable_commands_to_be_executed(),
                         entities,
                         shaders_manager);

@@ -1,4 +1,5 @@
 #include "input.hpp"
+#include <components/camera.hpp>
 #include <fmt/format.h>
 #include <magic_enum/magic_enum.hpp>
 #include <systems/unit_axes.hpp>
@@ -84,7 +85,7 @@ void wf::systems::input::update(entt::registry& entities)
     glfwPollEvents();
     if (is_pc_input_used_() and not is_pc_input_active_())
     {
-        active_system_.emplace<pc_input>(gsl::make_not_null(glfw_window_));
+        active_system_.emplace<pc_input>(gsl::make_not_null(glfw_window_), commands_);
     }
     if (is_xbox_controller_input_used_() and
         not is_xbox_controller_input_active_())
@@ -92,6 +93,10 @@ void wf::systems::input::update(entt::registry& entities)
         throw unimplemented_error{
             "Xbox controller support not implemented yet"};
     }
+
+    std::visit(overloaded{[](pc_input& system) { system.update(); },
+                          [](std::monostate) {}},
+               active_system_);
 }
 
 bool is_in(auto v, std::ranges::range auto r)
@@ -99,45 +104,12 @@ bool is_in(auto v, std::ranges::range auto r)
     return std::ranges::find(r, v) != r.end();
 }
 
-std::optional<glm::vec3> direction_from_key(int key)
-{
-    switch (key)
-    {
-    case GLFW_KEY_W:
-        return -z_unit;
-    case GLFW_KEY_S:
-        return z_unit;
-    case GLFW_KEY_A:
-        return -x_unit;
-    case GLFW_KEY_D:
-        return x_unit;
-    case GLFW_KEY_UP:
-        return y_unit;
-    case GLFW_KEY_DOWN:
-        return -y_unit;
-    }
-    return {};
-}
 
 void input::process_key_(int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-    {
-        commands_.emplace_back(
-            std::in_place_type<input_commands::close_window>);
-    }
-    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-    {
-        commands_.emplace_back(
-            std::in_place_type<input_commands::toggle_global_clock>);
-    }
-
-    if (auto maybe_direction = direction_from_key(key))
-    {
-        input_commands::change_position change_position_command;
-        change_position_command.direction = maybe_direction.value();
-        commands_.push_back(change_position_command);
-    }
+    std::visit(overloaded{[](const auto&) {},
+                   [=, this](pc_input& pc) { pc.consume_key(key, scancode, action, mods); }},
+               active_system_);
 }
 
 void input::key_callback_(

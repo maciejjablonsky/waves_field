@@ -59,6 +59,13 @@ template <class... Ts> struct overloaded : Ts...
 
 template <typename T>
 using optional_ref = std::optional<std::reference_wrapper<T>>;
+
+template <typename T> constexpr bool is_in(T&& value, auto&& container)
+{
+    return std::find(std::begin(container),
+                     std::end(container),
+                     std::forward<T>(value)) != std::end(container);
+}
 } // namespace wf
 
 template <> struct fmt::formatter<glm::vec3> : fmt::formatter<std::string>

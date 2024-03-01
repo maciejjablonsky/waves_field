@@ -34,6 +34,7 @@ class mesh : wf::non_copyable
   public:
     mesh(components::render& render_component,
          const std::filesystem::path& mesh_path);
+    ~mesh();
 
     void update_quantized(components::render& render_component,
                           const components::grid& grid_component,
