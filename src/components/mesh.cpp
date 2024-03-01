@@ -45,6 +45,14 @@ mesh::mesh(components::render& render_component,
     render_component.vertices_number = cpu_vertex_buffer_data.size();
 }
 
+mesh::~mesh()
+{
+    if (vbo_.has_value())
+    {
+        glDeleteBuffers(1, &*vbo_);
+    }
+}
+
 void mesh::cpu_to_gpu_vertex_buffer(GLuint vao,
                                     const std::vector<mesh_vertex>& cpu_data)
 {

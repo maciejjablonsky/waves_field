@@ -14,6 +14,7 @@ find_package(Microsoft.GSL REQUIRED CONFIG)
 find_package(magic_enum REQUIRED CONFIG)
 find_package(boost REQUIRED CONFIG)
 find_package(freetype REQUIRED CONFIG)
+find_package(range-v3 REQUIRED CONFIG)
 
 message(STATUS "${CMAKE_VERSION} ")
 set(CMAKE_CXX_MODULES ON)
@@ -32,10 +33,13 @@ target_sources(waves_field PUBLIC
     src/resource/shaders_manager.cpp
     src/systems/camera.cpp
     src/systems/pc_input.cpp
+    src/systems/physics.cpp
     src/systems/renderer.cpp
     src/systems/waves.cpp
     src/components/camera.cpp
     src/utils.cpp
+    src/components/movement.cpp
+    src/systems/movement.cpp
 
     PUBLIC
     FILE_SET HEADERS 
@@ -56,13 +60,17 @@ target_sources(waves_field PUBLIC
         src/resource/shaders_manager.hpp
         src/systems/input_command.hpp
         src/systems/pc_input.hpp
+        src/systems/physics.hpp
         src/systems/renderer.hpp
         src/systems/unit_axes.hpp
         src/systems/waves.hpp
         src/utils.hpp
+        src/components/velocity.hpp
+        src/components/movement.hpp
+        src/systems/movement.hpp
 )
 
-target_link_libraries(waves_field PRIVATE fmt::fmt glfw glad::glad glm::glm rapidjson EnTT::EnTT tinyobjloader::tinyobjloader Microsoft.GSL::GSL magic_enum::magic_enum Boost::headers Freetype::Freetype)
+target_link_libraries(waves_field PRIVATE fmt::fmt glfw glad::glad glm::glm rapidjson EnTT::EnTT tinyobjloader::tinyobjloader Microsoft.GSL::GSL magic_enum::magic_enum Boost::headers Freetype::Freetype range-v3::range-v3)
 
 
 install(TARGETS waves_field DESTINATION "."

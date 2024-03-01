@@ -1,12 +1,16 @@
 #pragma once
+#include <components/camera.hpp>
+#include <components/movement.hpp>
 #include <entt/entt.hpp>
 #include <glfw_glad.hpp>
 #include <glm/glm.hpp>
 #include <gsl/gsl>
 #include <optional>
+#include <range/v3/view/concat.hpp>
 #include <ranges>
 #include <systems/input_command.hpp>
 #include <systems/pc_input.hpp>
+#include <utils.hpp>
 #include <variant>
 #include <vector>
 
@@ -47,10 +51,12 @@ class input
 
     input_commands_view auto get_mutable_commands_to_be_executed()
     {
-        return commands_ | std::views::filter([](const input_command& c) {
-                   return std::visit(
-                       [](const auto& c) { return not c.executed(); }, c);
-               });
+        auto all    = std::views::all(commands_);
+        auto filter = std::views::filter([](const input_command& c) {
+            return std::visit([](const auto& c) { return not c.executed(); },
+                              c);
+        });
+        return all | filter;
     }
     bool is_window_open();
 };
