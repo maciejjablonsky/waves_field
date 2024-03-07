@@ -104,7 +104,8 @@ precompiled_shader::~precompiled_shader() noexcept
     }
 }
 
-shader_program::shader_program(shader_program&& other) noexcept : id{other.id}
+shader_program::shader_program(shader_program&& other) noexcept
+    : id{other.id}, uniform_infos{std::move(other.uniform_infos)}
 {
     other.id = {};
 }
