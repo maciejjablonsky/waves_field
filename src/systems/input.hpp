@@ -2,7 +2,7 @@
 #include <components/camera.hpp>
 #include <components/movement.hpp>
 #include <entt/entt.hpp>
-#include <glfw_glad.hpp>
+#include <glfw_glew.hpp>
 #include <glm/glm.hpp>
 #include <gsl/gsl>
 #include <optional>

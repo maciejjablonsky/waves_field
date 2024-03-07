@@ -3,6 +3,7 @@
 #include <boost/circular_buffer.hpp>
 #include <clock.hpp>
 #include <components/grid.hpp>
+#include <components/material.hpp>
 #include <components/mesh.hpp>
 #include <components/render.hpp>
 #include <components/transform.hpp>
@@ -14,9 +15,9 @@
 #include <random>
 #include <resource/shaders_manager.hpp>
 #include <systems/camera.hpp>
+#include <systems/movement.hpp>
 #include <systems/physics.hpp>
 #include <systems/waves.hpp>
-#include <systems/movement.hpp>
 
 namespace wf
 {
@@ -30,6 +31,8 @@ void create_waves_entity(entt::registry& entities,
     grid.tile_size = 16.f;
     grid.set_resolution(100.f, 100.f);
 
+    auto& material = entities.emplace<components::material>(
+        entity, shaders_manager.get("phong_light"));
     auto& render = entities.emplace<components::render>(
         entity, shaders_manager.get("phong_light"));
 

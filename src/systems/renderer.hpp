@@ -5,11 +5,12 @@
 #include <components/transform.hpp>
 #include <config.hpp>
 #include <entt/entt.hpp>
-#include <glfw_glad.hpp>
+#include <glfw_glew.hpp>
 #include <gsl/gsl>
 #include <numeric>
 #include <resource/shaders_manager.hpp>
 #include <systems/input_command.hpp>
+#include <uniform_buffer.hpp>
 
 namespace wf::systems
 {
@@ -70,6 +71,8 @@ class renderer
     glm::mat4 view_matrix_;
     glm::mat4 projection_matrix_;
     wf::optional_ref<const clock> clock_;
+    wf::uniform_buffer vp_matrices_;
+    wf::uniform_buffer lighting_;
     static void framebuffer_size_callback(GLFWwindow* window,
                                           int width,
                                           int height);
@@ -88,6 +91,7 @@ class renderer
                                  const components::transform& camera_transform);
     void recompute_vp_matrices_(const components::camera& camera,
                                 const components::transform& camera_transform);
+    void render_with_materials_(entt::registry& entities);
 
   public:
     void initialize(const renderer_config&,
@@ -118,9 +122,8 @@ void renderer::update(input_commands_view auto commands,
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     render_performance_(shaders_manager);
-    // display_control_cube(shaders_manager, view_matrix, projection_matrix);
     render_unit_axes_(shaders_manager, view_matrix_, projection_matrix_);
-    render_grids_(entities, shaders_manager, main_camera_transform);
+    render_with_materials_(entities);
 
     glfwSwapBuffers(glfw_window_);
 }

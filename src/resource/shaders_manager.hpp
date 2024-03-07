@@ -1,11 +1,15 @@
 #pragma once
+#include <concepts>
 #include <config.hpp>
 #include <filesystem>
-#include <glad/glad.h>
+#include <fmt/format.h>
+#include <glfw_glew.hpp>
 #include <glm/glm.hpp>
+#include <optional>
+#include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utils.hpp>
-#include <fmt/format.h>
 
 namespace wf::resource
 {
@@ -20,15 +24,25 @@ struct precompiled_shader : private non_copyable
     ~precompiled_shader() noexcept;
 };
 
+struct uniform_info
+{
+    int32_t location{};
+    uint32_t type{};
+    int32_t size{};
+    std::optional<std::string> block_name = std::nullopt;
+    std::optional<int32_t> block_index    = std::nullopt;
+};
+
 struct shader_program : private non_copyable
 {
     GLuint id{};
+    std::unordered_map<std::string, uniform_info> uniform_infos;
 
     shader_program(std::forward_iterator auto begin,
                    std::forward_iterator auto end)
     {
         id = glCreateProgram();
-        std::for_each(begin, end, [=](const precompiled_shader& shader) {
+        std::for_each(begin, end, [=, this](const precompiled_shader& shader) {
             glAttachShader(id, shader.id);
         });
         glLinkProgram(id);
@@ -42,6 +56,7 @@ struct shader_program : private non_copyable
             glGetProgramInfoLog(id, info_log.size(), nullptr, info_log.data());
             throw std::runtime_error{info_log};
         }
+        analyze_program_for_uniforms_();
     }
 
     shader_program(shader_program&&) noexcept;
@@ -50,9 +65,12 @@ struct shader_program : private non_copyable
 
     void set(std::string_view name, const glm::vec3& value);
     void set(std::string_view name, const glm::mat4& value);
-    void use() ;
+    void use();
 
     ~shader_program() noexcept;
+
+  private:
+    void analyze_program_for_uniforms_();
 };
 
 class shaders_manager
@@ -65,15 +83,29 @@ class shaders_manager
     shaders_manager(const wf::shaders_config&);
     void init();
 
-    template <typename Self>
-    auto& get(this Self&& self, const std::string& name)
+    auto& get(const std::string& name)
     {
-        if (auto it = self.shaders_.find(name); it != std::end(self.shaders_))
+        if (auto it = shaders_.find(name); it != std::end(shaders_))
         {
             return it->second;
         }
         throw std::runtime_error{
             fmt::format("No shader identified by \"{}\"\n", name)};
     }
+};
+
+struct uniform_names
+{
+    static constexpr std::string_view view_matrix       = "u_view";
+    static constexpr std::string_view projection_matrix = "u_projection";
+    static constexpr std::string_view model_matrix      = "u_model";
+    static constexpr std::string_view camera_position   = "u_camera_position";
+
+    static constexpr inline auto names = {
+        view_matrix, projection_matrix, model_matrix, camera_position};
+
+    static constexpr std::string_view camera_block = "camera";
+
+    static constexpr inline auto block_names = {camera_block};
 };
 } // namespace wf::resource

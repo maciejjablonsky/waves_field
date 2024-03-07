@@ -1,12 +1,14 @@
+#include <algorithm>
 #include <boost/circular_buffer.hpp>
 #include <components/camera.hpp>
 #include <components/grid.hpp>
+#include <components/material.hpp>
 #include <components/mesh.hpp>
 #include <components/render.hpp>
 #include <components/transform.hpp>
 #include <config.hpp>
 #include <fmt/chrono.h>
-#include <glfw_glad.hpp>
+#include <glfw_glew.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
@@ -19,9 +21,119 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-extern "C"
+void APIENTRY GLDebugMessageCallback(GLenum source,
+                                     GLenum type,
+                                     GLuint id,
+                                     GLenum severity,
+                                     GLsizei length,
+                                     const GLchar* msg,
+                                     const void* data)
 {
-    __declspec(dllexport) int NvOptimusEnablement = 0x00000001;
+    const char* _source;
+    const char* _type;
+    const char* _severity;
+
+    switch (source)
+    {
+    case GL_DEBUG_SOURCE_API:
+        _source = "API";
+        break;
+
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+        _source = "WINDOW SYSTEM";
+        break;
+
+    case GL_DEBUG_SOURCE_SHADER_COMPILER:
+        _source = "SHADER COMPILER";
+        break;
+
+    case GL_DEBUG_SOURCE_THIRD_PARTY:
+        _source = "THIRD PARTY";
+        break;
+
+    case GL_DEBUG_SOURCE_APPLICATION:
+        _source = "APPLICATION";
+        break;
+
+    case GL_DEBUG_SOURCE_OTHER:
+        _source = "UNKNOWN";
+        break;
+
+    default:
+        _source = "UNKNOWN";
+        break;
+    }
+
+    switch (type)
+    {
+    case GL_DEBUG_TYPE_ERROR:
+        _type = "ERROR";
+        break;
+
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        _type = "DEPRECATED BEHAVIOR";
+        break;
+
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        _type = "UDEFINED BEHAVIOR";
+        break;
+
+    case GL_DEBUG_TYPE_PORTABILITY:
+        _type = "PORTABILITY";
+        break;
+
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        _type = "PERFORMANCE";
+        break;
+
+    case GL_DEBUG_TYPE_OTHER:
+        _type = "OTHER";
+        break;
+
+    case GL_DEBUG_TYPE_MARKER:
+        _type = "MARKER";
+        break;
+
+    default:
+        _type = "UNKNOWN";
+        break;
+    }
+
+    switch (severity)
+    {
+    case GL_DEBUG_SEVERITY_HIGH:
+        _severity = "HIGH";
+        break;
+
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        _severity = "MEDIUM";
+        break;
+
+    case GL_DEBUG_SEVERITY_LOW:
+        _severity = "LOW";
+        break;
+
+    case GL_DEBUG_SEVERITY_NOTIFICATION:
+        _severity = "NOTIFICATION";
+        break;
+
+    default:
+        _severity = "UNKNOWN";
+        break;
+    }
+
+    if (wf::is_in(severity,
+                  std::initializer_list{GL_DEBUG_SEVERITY_HIGH,
+                                        GL_DEBUG_SEVERITY_MEDIUM}))
+    {
+        fmt::print("{}: {} of {} severity, raised from {}: {}\n",
+                   id,
+                   _type,
+                   _severity,
+                   _source,
+                   msg);
+        __debugbreak();
+    }
 }
 
 namespace wf::systems
@@ -228,9 +340,10 @@ void renderer::initialize(const renderer_config& c,
     clock_ = clock;
 
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
     glfw_window_ = glfwCreateWindow(
         c.width(), c.height(), c.name().data(), nullptr, nullptr);
 
@@ -240,23 +353,48 @@ void renderer::initialize(const renderer_config& c,
     }
 
     glfwMakeContextCurrent(glfw_window_);
+    if (glewInit() != GLEW_OK)
+    {
+        throw std::runtime_error{"Failed to initialize GLEW\n"};
+    }
     glfwSetFramebufferSizeCallback(glfw_window_,
                                    renderer::framebuffer_size_callback);
     glfwSetWindowUserPointer(glfw_window_, this);
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        throw std::runtime_error{"Failed to initialize GLAD\n"};
-    }
     init_ft_();
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    // glClearColor(40.f / 256, 0.f / 256, 75.f / 256, 1.f);
+    // Print OpenGL version
+    const GLubyte* renderer = glGetString(GL_RENDERER); // Get renderer string
+    const GLubyte* version  = glGetString(GL_VERSION);  // Version as a string
+    fmt::print("Renderer: {}\n", (const char*)renderer);
+    fmt::print("OpenGL version supported: {}\n", (const char*)version);
+
+#ifndef NDEBUG
+    // Enable debug output
+    glEnable(GL_DEBUG_OUTPUT);
+    // Optionally enable synchronous output to make debugging easier
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(GLDebugMessageCallback, nullptr);
+#endif
+
+    glClearColor(40.f / 256, 0.f / 256, 75.f / 256, 1.f);
     viewport_ = {c.width(), c.height()};
     glViewport(0, 0, viewport_.x, viewport_.y);
     glfwSwapInterval(0);
+
+    vp_matrices_.set(uniform_buffer::mode::frequently_updated);
+    vp_matrices_.define<glm::mat4>(resource::uniform_names::view_matrix);
+    vp_matrices_.define<glm::mat4>(resource::uniform_names::projection_matrix);
+    vp_matrices_.define<glm::vec3>(resource::uniform_names::camera_position);
+    vp_matrices_.configure();
+
+    lighting_.set(uniform_buffer::mode::rarely_updated);
+    lighting_.define<glm::vec3>("u_light_position", 16);
+    lighting_.define<glm::vec3>("u_light_color", 16);
+    lighting_.define<glm::vec3>("u_object_color", 16);
+    lighting_.configure();
 
     const auto& [main_camera, main_camera_transform] =
         find_main_camera(entities);
@@ -270,33 +408,6 @@ renderer::~renderer() noexcept
         glfwDestroyWindow(glfw_window_);
     }
     glfwTerminate();
-}
-
-void renderer::render_grids_(
-    entt::registry& entities,
-    resource::shaders_manager& shaders_manager,
-    const components::transform& main_camera_transform) const
-{
-    auto view = entities.view<components::transform, components::render>();
-    for (auto entity : view)
-    {
-        auto& render    = view.get<components::render>(entity);
-        auto& transform = view.get<components::transform>(entity);
-        auto& shader    = render.shader.get();
-
-        shader.use();
-        shader.set("u_view", view_matrix_);
-        shader.set("u_projection", projection_matrix_);
-        shader.set("u_model", transform.get_model_matrix());
-
-        shader.set("lightPos", glm::vec3{0.f, 200.f, 0.f});
-        shader.set("viewPos", main_camera_transform.position);
-        shader.set("objectColor", glm::vec3(0, 51, 102) / 256.f);
-        shader.set("lightColor", glm::vec3{252, 229, 112} / 256.f);
-        glBindVertexArray(render.vao);
-        glDrawArrays(GL_TRIANGLES, 0, render.vertices_number);
-        glBindVertexArray(0);
-    }
 }
 
 void renderer::render_performance_(resource::shaders_manager& shaders_manager)
@@ -342,6 +453,11 @@ void renderer::recompute_vp_matrices_(
                                           viewport_.x / viewport_.y,
                                           0.1f,
                                           1000.f);
+    vp_matrices_.set(wf::resource::uniform_names::view_matrix, view_matrix_);
+    vp_matrices_.set(wf::resource::uniform_names::projection_matrix,
+                     projection_matrix_);
+    vp_matrices_.set(resource::uniform_names::camera_position,
+                     camera_transform.position);
 }
 
 void renderer::render_text(wf::resource::shader_program& s,
@@ -360,8 +476,7 @@ void renderer::render_text(wf::resource::shader_program& s,
     glBindVertexArray(text_vao_);
 
     // iterate through all characters
-    std::string::const_iterator c;
-    for (c = text.begin(); c != text.end(); c++)
+    for (auto c = text.begin(); c != text.end(); c++)
     {
         const Character& ch = Characters.at(*c);
 
@@ -395,4 +510,35 @@ void renderer::render_text(wf::resource::shader_program& s,
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void renderer::render_with_materials_(entt::registry& entities)
+{
+    auto view = entities.view<components::transform,
+                              components::render,
+                              components::material>();
+    for (auto entity : view)
+    {
+        uint32_t ubo_binding_point = 0;
+        const auto& render         = view.get<components::render>(entity);
+        auto& transform            = view.get<components::transform>(entity);
+        const auto& material       = view.get<components::material>(entity);
+        auto& shader               = render.shader.get();
+        vp_matrices_.connect(material.get_shader(),
+                             resource::uniform_names::camera_block,
+                             ubo_binding_point);
+        ubo_binding_point++;
+        material.bind();
+        lighting_.connect(
+            material.get_shader(), "phong_lighting", ubo_binding_point);
+        shader.set(resource::uniform_names::model_matrix,
+                   transform.get_model_matrix());
+
+        lighting_.set("u_light_position"sv, glm::vec3{0.f, 200.f, 0.f});
+        lighting_.set("u_light_color"sv, glm::vec3{252, 229, 112} / 256.f);
+        lighting_.set("u_object_color"sv, glm::vec3{0.f, 0.19f, 0.39f});
+
+        glBindVertexArray(render.vao);
+        glDrawArrays(GL_TRIANGLES, 0, render.vertices_number);
+        glBindVertexArray(0);
+    }
+}
 } // namespace wf::systems

@@ -1,5 +1,5 @@
 #include <components/mesh.hpp>
-#include <glad/glad.h>
+#include <glfw_glew.hpp>
 #include <glm/glm.hpp>
 #include <tiny_obj_loader.h>
 

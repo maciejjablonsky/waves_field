@@ -1,11 +1,11 @@
 #pragma once
 #include <entt/entt.hpp>
-#include <glfw_glad.hpp>
+#include <glfw_glew.hpp>
 #include <gsl/gsl>
-#include <systems/input_command.hpp>
-#include <vector>
-#include <unordered_map>
 #include <ranges>
+#include <systems/input_command.hpp>
+#include <unordered_map>
+#include <vector>
 
 namespace wf::systems
 {
@@ -14,7 +14,7 @@ enum class key_state : uint8_t
     idle,
     pressed,
     active,
-    released 
+    released
 };
 
 enum class player_state : uint8_t
@@ -36,9 +36,11 @@ class pc_input
     bool is_key_just_released_(int key) const;
 
     void process_movement_keys_();
+
   public:
-    pc_input(gsl::not_null<GLFWwindow*> glfw_window, std::vector<systems::input_command> & commands);
+    pc_input(gsl::not_null<GLFWwindow*> glfw_window,
+             std::vector<systems::input_command>& commands);
     void consume_key(int key, int scancode, int action, int mods);
     void update();
 };
-}
+} // namespace wf::systems

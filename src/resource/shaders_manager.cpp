@@ -2,6 +2,7 @@
 #include <execution>
 #include <filesystem>
 #include <fmt/std.h>
+#include <glm/gtc/type_ptr.hpp>
 #include <ranges>
 #include <resource/shaders_manager.hpp>
 #include <unordered_set>
@@ -123,19 +124,19 @@ void shader_program::swap(shader_program& other) noexcept
     std::swap(id, other.id);
 }
 
-void shader_program::set(std::string_view name, const glm::vec3 & value)
+void shader_program::set(std::string_view name, const glm::vec3& value)
 {
-    auto location =  glGetUniformLocation(id, name.data());
-    glUniform3fv(location, 1, std::addressof(value[0]));
+    auto location = glGetUniformLocation(id, name.data());
+    glUniform3fv(location, 1, glm::value_ptr(value));
 }
 
 void shader_program::set(std::string_view name, const glm::mat4& value)
 {
-    auto location =  glGetUniformLocation(id, name.data());
-    glUniformMatrix4fv(location, 1, false, std::addressof(value[0][0]));
+    auto location = glGetUniformLocation(id, name.data());
+    glUniformMatrix4fv(location, 1, false, glm::value_ptr(value));
 }
 
-void shader_program::use() 
+void shader_program::use()
 {
     glUseProgram(id);
 }
@@ -145,6 +146,57 @@ shader_program::~shader_program() noexcept
     if (id)
     {
         glDeleteProgram(id);
+    }
+}
+
+void shader_program::analyze_program_for_uniforms_()
+{
+    int32_t uniforms{};
+    glGetProgramiv(id, GL_ACTIVE_UNIFORMS, std::addressof(uniforms));
+    std::vector<uint32_t> indices(uniforms);
+    std::iota(std::begin(indices), std::end(indices), 0);
+    std::vector<int32_t> block_indices(uniforms);
+    glGetActiveUniformsiv(id,
+                          uniforms,
+                          indices.data(),
+                          GL_UNIFORM_BLOCK_INDEX,
+                          block_indices.data());
+
+    for (int i = 0; i < uniforms; ++i)
+    {
+        int32_t name_length{};
+        uniform_info info;
+        std::string name(256, '\0');
+        glGetActiveUniform(id,
+                           i,
+                           name.size(),
+                           std::addressof(name_length),
+                           std::addressof(info.size),
+                           std::addressof(info.type),
+                           name.data());
+        name.resize(name_length);
+
+        if (block_indices[i] != -1)
+        {
+            int32_t name_length{};
+            glGetActiveUniformBlockiv(id,
+                                      block_indices[i],
+                                      GL_UNIFORM_BLOCK_NAME_LENGTH,
+                                      std::addressof(name_length));
+            std::string blockName(name_length, '\0');
+            glGetActiveUniformBlockName(
+                id, block_indices[i], name_length, nullptr, blockName.data());
+            blockName.resize(name_length);
+            if (not wf::is_in(blockName, resource::uniform_names::block_names))
+            {
+                info.block_name = blockName;
+            }
+        }
+        if (!wf::is_in(name, resource::uniform_names::names))
+        {
+            uniform_infos[{name.data(), static_cast<size_t>(name_length)}] =
+                info;
+        }
     }
 }
 
@@ -199,13 +251,13 @@ std::pmr::unordered_map<std::string, shader_program> make_shaders_programs(
     return programs;
 }
 
-shaders_manager::shaders_manager(const wf::shaders_config& config) : config_{config}
+shaders_manager::shaders_manager(const wf::shaders_config& config)
+    : config_{config}
 {
 }
 
 void shaders_manager::init()
 {
-    shaders_ =
-        make_shaders_programs(config_.get().source_directory());
+    shaders_ = make_shaders_programs(config_.get().source_directory());
 }
 } // namespace wf::resource

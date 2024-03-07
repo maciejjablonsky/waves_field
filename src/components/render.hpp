@@ -1,5 +1,5 @@
 #pragma once
-#include <glfw_glad.hpp>
+#include <glfw_glew.hpp>
 #include <mdspan>
 #include <optional>
 #include <resource/shaders_manager.hpp>
