@@ -1,6 +1,7 @@
+#include <array>
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
-#include <glfw_glad.hpp>
+#include <glfw_glew.hpp>
 #include <glm/glm.hpp>
 #include <numeric>
 #include <systems/pc_input.hpp>
@@ -67,12 +68,12 @@ std::optional<glm::vec3> direction_from_key(int key)
 
 void pc_input::process_movement_keys_()
 {
-    constexpr auto movement_keys = {GLFW_KEY_W,
-                                    GLFW_KEY_S,
-                                    GLFW_KEY_A,
-                                    GLFW_KEY_D,
-                                    GLFW_KEY_UP,
-                                    GLFW_KEY_DOWN};
+    constexpr std::array movement_keys = {GLFW_KEY_W,
+                                          GLFW_KEY_S,
+                                          GLFW_KEY_A,
+                                          GLFW_KEY_D,
+                                          GLFW_KEY_UP,
+                                          GLFW_KEY_DOWN};
     std::set<int> pressed_keys{};
     for (auto key : movement_keys)
     {

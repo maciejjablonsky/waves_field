@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD 23)
 
 find_package(glfw3 REQUIRED CONFIG)
 find_package(fmt REQUIRED CONFIG)
-find_package(glad REQUIRED CONFIG)
+# find_package(glad REQUIRED CONFIG)
+find_package(glew REQUIRED CONFIG)
 find_package(glm REQUIRED CONFIG)
 find_package(RapidJSON REQUIRED CONFIG)
 find_package(EnTT REQUIRED CONFIG)
@@ -40,6 +41,8 @@ target_sources(waves_field PUBLIC
     src/utils.cpp
     src/components/movement.cpp
     src/systems/movement.cpp
+    src/components/material.cpp
+    src/uniform_buffer.cpp
 
     PUBLIC
     FILE_SET HEADERS 
@@ -56,7 +59,7 @@ target_sources(waves_field PUBLIC
         src/components/render.hpp
         src/components/transform.hpp
         src/config.hpp
-        src/glfw_glad.hpp
+        src/glfw_glew.hpp
         src/resource/shaders_manager.hpp
         src/systems/input_command.hpp
         src/systems/pc_input.hpp
@@ -68,9 +71,13 @@ target_sources(waves_field PUBLIC
         src/components/velocity.hpp
         src/components/movement.hpp
         src/systems/movement.hpp
+        src/components/material.hpp
+        src/vertex_buffer_layout.hpp
+        src/uniform_buffer.hpp
+        src/gl_error.hpp
 )
 
-target_link_libraries(waves_field PRIVATE fmt::fmt glfw glad::glad glm::glm rapidjson EnTT::EnTT tinyobjloader::tinyobjloader Microsoft.GSL::GSL magic_enum::magic_enum Boost::headers Freetype::Freetype range-v3::range-v3)
+target_link_libraries(waves_field PRIVATE fmt::fmt glfw glm::glm rapidjson EnTT::EnTT tinyobjloader::tinyobjloader Microsoft.GSL::GSL magic_enum::magic_enum Boost::headers Freetype::Freetype range-v3::range-v3 GLEW::GLEW)
 
 
 install(TARGETS waves_field DESTINATION "."
@@ -98,7 +105,7 @@ if (MSVC)
         $<$<CONFIG:Release>:/Ot> # Favor fast code
         $<$<CONFIG:Release>:/Oy> # Omit frame pointers
         $<$<CONFIG:Release>:/Ob2> # Inline function expansion
-        $<$<CONFIG:Release>:/GL> # Whole program optimization
+        # $<$<CONFIG:Release>:/GL> # Whole program optimization
     )
     target_link_options(waves_field PRIVATE
         $<$<CONFIG:Release>:/LTCG> # Link-time code generation for Release

@@ -28,7 +28,7 @@ class waves_field(ConanFile):
     def requirements(self):
         self.requires("fmt/10.1.1")
         self.requires("glfw/3.3.8")
-        self.requires("glad/0.1.36")
+        self.requires("glew/2.2.0")
         self.requires("glm/cci.20230113")
         self.requires("rapidjson/cci.20230929")
         self.requires("entt/3.12.2")
