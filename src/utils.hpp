@@ -6,6 +6,8 @@
 #include <glm/glm.hpp>
 #include <source_location>
 #include <string>
+#include <type_traits>
+#include <utility>
 
 namespace wf
 {
@@ -66,6 +68,55 @@ template <typename T> constexpr bool is_in(T&& value, auto&& container)
                      std::end(container),
                      std::forward<T>(value)) != std::end(container);
 }
+
+template <typename> struct is_tuple : std::false_type
+{
+};
+
+template <typename... T> struct is_tuple<std::tuple<T...>> : std::true_type
+{
+};
+
+template <typename T> constexpr inline bool is_tuple_v = is_tuple<T>::value;
+
+template <typename> struct function_traits;
+
+template <typename Function>
+struct function_traits : public function_traits<decltype(&Function::operator())>
+{
+};
+
+template <typename Ret, typename Class, typename... Args>
+struct function_traits<Ret (Class::*)(Args...) const>
+{
+    using result_type = Ret;
+
+    template <std::size_t Index>
+    using argument =
+        typename std::tuple_element<Index, std::tuple<Args...>>::type;
+
+    static const std::size_t arity = sizeof...(Args);
+};
+
+template <typename Ret, typename... Args>
+struct function_traits<Ret (*)(Args...)>
+{
+    using result_type = Ret;
+    template <std::size_t Index>
+    using argument =
+        typename std::tuple_element<Index, std::tuple<Args...>>::type;
+    static const std::size_t arity = sizeof...(Args);
+};
+
+template <typename Ret, typename Class, typename... Args>
+struct function_traits<Ret (Class::*)(Args...)>
+{
+    using result_type = Ret;
+    template <std::size_t Index>
+    using argument =
+        typename std::tuple_element<Index, std::tuple<Args...>>::type;
+    static const std::size_t arity = sizeof...(Args);
+};
 } // namespace wf
 
 template <> struct fmt::formatter<glm::vec3> : fmt::formatter<std::string>

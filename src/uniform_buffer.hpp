@@ -72,6 +72,6 @@ class uniform_buffer : public wf::non_copyable
 
     void connect(const resource::shader_program& shader,
                  std::string_view uniform_block_name,
-                 uint32_t binding_point = 0) const;
+                 uint32_t& binding_point) const;
 };
 } // namespace wf

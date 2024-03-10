@@ -65,7 +65,7 @@ struct shader_program : private non_copyable
 
     void set(std::string_view name, const glm::vec3& value);
     void set(std::string_view name, const glm::mat4& value);
-    void use();
+    void use() const;
 
     ~shader_program() noexcept;
 

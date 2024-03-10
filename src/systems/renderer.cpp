@@ -513,32 +513,28 @@ void renderer::render_text(wf::resource::shader_program& s,
 void renderer::render_with_materials_(entt::registry& entities)
 {
     auto view = entities.view<components::transform,
-                              components::render,
-                              components::material>();
+                              components::material,
+                              components::mesh>();
     for (auto entity : view)
     {
-        uint32_t ubo_binding_point = 0;
-        const auto& render         = view.get<components::render>(entity);
         auto& transform            = view.get<components::transform>(entity);
-        const auto& material       = view.get<components::material>(entity);
-        auto& shader               = render.shader.get();
-        vp_matrices_.connect(material.get_shader(),
-                             resource::uniform_names::camera_block,
-                             ubo_binding_point);
-        ubo_binding_point++;
-        material.bind();
-        lighting_.connect(
-            material.get_shader(), "phong_lighting", ubo_binding_point);
+        auto& material             = view.get<components::material>(entity);
+        auto& mesh                 = view.get<components::mesh>(entity);
+        auto& shader               = material.get_shader();
+        uint32_t ubo_binding_point = 0;
+        vp_matrices_.connect(
+            shader, resource::uniform_names::camera_block, ubo_binding_point);
+        material.bind(ubo_binding_point);
+        lighting_.connect(shader, "phong_lighting", ubo_binding_point);
+
         shader.set(resource::uniform_names::model_matrix,
                    transform.get_model_matrix());
 
         lighting_.set("u_light_position"sv, glm::vec3{0.f, 200.f, 0.f});
         lighting_.set("u_light_color"sv, glm::vec3{252, 229, 112} / 256.f);
         lighting_.set("u_object_color"sv, glm::vec3{0.f, 0.19f, 0.39f});
-
-        glBindVertexArray(render.vao);
-        glDrawArrays(GL_TRIANGLES, 0, render.vertices_number);
-        glBindVertexArray(0);
+        mesh.bind();
+        glDrawArrays(GL_TRIANGLES, 0, mesh.get_vertices_number());
     }
 }
 } // namespace wf::systems

@@ -7,18 +7,21 @@ namespace wf::components
 class material
 {
   private:
-    std::reference_wrapper<const resource::shader_program> shader_;
+    std::reference_wrapper<resource::shader_program> shader_;
     std::unordered_map<std::string, uniform_buffer> uniform_buffers_;
 
     void create_uniform_buffers_();
 
   public:
-    material(const wf::resource::shader_program& shader);
+    material(wf::resource::shader_program& shader);
     material(material&& other) noexcept            = default;
     material& operator=(material&& other) noexcept = default;
 
-    const resource::shader_program& get_shader() const;
+    template <typename Self> auto& get_shader(this Self&& self)
+    {
+        return self.shader_.get();
+    }
 
-    void bind() const;
+    void bind(uint32_t& binding_point) const;
 };
 } // namespace wf::components

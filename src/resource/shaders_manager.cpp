@@ -137,7 +137,7 @@ void shader_program::set(std::string_view name, const glm::mat4& value)
     glUniformMatrix4fv(location, 1, false, glm::value_ptr(value));
 }
 
-void shader_program::use()
+void shader_program::use() const
 {
     glUseProgram(id);
 }
