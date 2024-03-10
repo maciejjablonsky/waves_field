@@ -1,204 +1,144 @@
 #pragma once
 
+#include <boost/function_types/parameter_types.hpp>
+#include <boost/functional/hash.hpp>
+#include <boost/typeof/typeof.hpp>
 #include <components/grid.hpp>
 #include <components/render.hpp>
+#include <concepts>
+#include <entt/entt.hpp>
 #include <filesystem>
+#include <format>
 #include <glm/glm.hpp>
 #include <magic_enum/magic_enum.hpp>
+#include <optional>
 #include <systems/unit_axes.hpp>
 #include <utils.hpp>
+#include <vector>
 
-namespace wf::components
+namespace wf
 {
-struct mesh_vertex
+// this is default template, to proceed define specialization
+template <typename T> struct vertex_attribute_pointer
 {
-    glm::vec3 position;
-    glm::vec3 normal;
+    vertex_attribute_pointer() = delete;
 };
 
 template <typename T>
-concept wave_function = requires(T t, float x, float z) {
+concept has_vertex_definition =
+    requires(vertex_attribute_pointer<T> p, uint32_t& attribute_index) {
+        {
+            p.set_vertex_attribute_pointer(attribute_index)
+        };
+    } and
+    std::same_as<
+        typename function_traits<
+            decltype(&vertex_attribute_pointer<
+                     T>::set_vertex_attribute_pointer)>::template argument<0>,
+        uint32_t&>;
+
+} // namespace wf
+
+namespace wf::components
+{
+
+class vertex_buffer_layout : wf::non_copyable
+{
+    uint32_t vao_{};
+    uint32_t attribute_index_{};
+    std::vector<entt::id_type> hashed_attributes_;
+
+  public:
+    vertex_buffer_layout();
+    vertex_buffer_layout(vertex_buffer_layout&& other) noexcept;
+    vertex_buffer_layout& operator=(vertex_buffer_layout&& other) noexcept;
+    void swap(vertex_buffer_layout& other);
+
+    ~vertex_buffer_layout();
+    void bind() const;
+
+    template <has_vertex_definition T> void define()
     {
-        t(x, z)
-    } -> std::convertible_to<float>;
+        bind();
+        vertex_attribute_pointer<T>::set_vertex_attribute_pointer(
+            attribute_index_);
+        hashed_attributes_.push_back(entt::type_hash<T>::value());
+    }
+
+    template <typename T> bool contains() const
+    {
+        return std::find_if(std::begin(hashed_attributes_),
+                            std::end(hashed_attributes_),
+                            [this](entt::id_type id) {
+                                return id == entt::type_hash<T>::value();
+                            }) != std::end(hashed_attributes_);
+    }
 };
 
 class mesh : wf::non_copyable
 {
+  public:
+    enum class update_frequency : uint8_t
+    {
+        rarely,
+        often
+    };
+
   private:
-    std::optional<uint32_t> vbo_;
-    std::vector<mesh_vertex> vertices_;
-    void cpu_to_gpu_vertex_buffer(GLuint vao,
-                                  const std::vector<mesh_vertex>& cpu_data);
+    vertex_buffer_layout layout_;
+
+    std::optional<size_t> vertices_count_;
+    std::vector<uint32_t> buffers_;
+
+    void check_vertices_count_(size_t new_count);
+    template <typename T> void check_vertex_type_in_layout_()
+    {
+        if (layout_.contains<T>())
+        {
+            throw std::runtime_error{std::format(
+                "mesh already has {} attribute defined!", typeid(T).name())};
+        }
+    }
 
   public:
-    mesh(components::render& render_component,
-         const std::filesystem::path& mesh_path);
-    ~mesh();
-
-    void update_quantized(components::render& render_component,
-                          const components::grid& grid_component,
-                          wave_function auto height)
+    size_t get_vertices_number() const;
+    void bind() const;
+    void assign(std::contiguous_iterator auto begin,
+                std::contiguous_iterator auto end,
+                update_frequency f = update_frequency::rarely)
+        requires has_vertex_definition<
+            typename std::iterator_traits<decltype(begin)>::value_type>
     {
-        using systems::x_unit;
-        using systems::y_unit;
-        using systems::z_unit;
-        vertices_.clear();
+        using value_type = std::iterator_traits<decltype(begin)>::value_type;
+        check_vertex_type_in_layout_<value_type>();
+        check_vertices_count_(end - begin);
 
-        auto tile       = grid_component.tile_size;
-        auto half_tile  = tile / 2;
-        auto half_width = grid_component.width / 2;
-        auto half_depth = grid_component.depth / 2;
-        vertices_.reserve(18 * ((grid_component.width / tile) + 1) *
-                          ((grid_component.depth / tile) + 1));
-
-        for (float x = -half_width; x < half_width; x += tile)
-        {
-            for (float z = -half_depth; z < half_depth; z += tile)
+        auto update_type = [=] {
+            switch (f)
             {
-                // up face
-                auto up_y = height(x + half_tile, z + half_tile);
-                vertices_.emplace_back<glm::vec3>({x, up_y, z}, y_unit);
-                vertices_.emplace_back<glm::vec3>({x, up_y, z + tile}, y_unit);
-                vertices_.emplace_back<glm::vec3>({x + tile, up_y, z + tile},
-                                                  y_unit);
-
-                vertices_.emplace_back<glm::vec3>({x + tile, up_y, z + tile},
-                                                  y_unit);
-                vertices_.emplace_back<glm::vec3>({x + tile, up_y, z}, y_unit);
-                vertices_.emplace_back<glm::vec3>({x, up_y, z}, y_unit);
-
-                // north face
-                if (auto north_y = height(x + half_tile, z - tile + half_tile);
-                    up_y >= north_y)
-                {
-                    vertices_.emplace_back<glm::vec3>({x, up_y, z}, -z_unit);
-                    vertices_.emplace_back<glm::vec3>({x + tile, up_y, z},
-                                                      -z_unit);
-                    vertices_.emplace_back<glm::vec3>({x + tile, north_y, z},
-                                                      -z_unit);
-
-                    vertices_.emplace_back<glm::vec3>({x + tile, north_y, z},
-                                                      -z_unit);
-                    vertices_.emplace_back<glm::vec3>({x, north_y, z}, -z_unit);
-                    vertices_.emplace_back<glm::vec3>({x, up_y, z}, -z_unit);
-                }
-                if (auto neighbour_south_y =
-                        height(x + half_tile, z - tile + half_tile);
-                    neighbour_south_y > up_y)
-                {
-                    vertices_.emplace_back<glm::vec3>({x, neighbour_south_y, z},
-                                                      z_unit);
-                    vertices_.emplace_back<glm::vec3>({x, up_y, z}, z_unit);
-                    vertices_.emplace_back<glm::vec3>({x + tile, up_y, z},
-                                                      z_unit);
-
-                    vertices_.emplace_back<glm::vec3>({x + tile, up_y, z},
-                                                      z_unit);
-                    vertices_.emplace_back<glm::vec3>(
-                        {x + tile, neighbour_south_y, z}, z_unit);
-                    vertices_.emplace_back<glm::vec3>({x, neighbour_south_y, z},
-                                                      z_unit);
-                }
-
-                if (auto west_y = height(x + half_tile - tile, z + half_tile);
-                    up_y >= west_y)
-                {
-                    vertices_.emplace_back<glm::vec3>({x, up_y, z + tile},
-                                                      -x_unit);
-                    vertices_.emplace_back<glm::vec3>({x, up_y, z}, -x_unit);
-                    vertices_.emplace_back<glm::vec3>({x, west_y, z}, -x_unit);
-
-                    vertices_.emplace_back<glm::vec3>({x, west_y, z}, -x_unit);
-                    vertices_.emplace_back<glm::vec3>({x, west_y, z + tile},
-                                                      -x_unit);
-                    vertices_.emplace_back<glm::vec3>({x, up_y, z + tile},
-                                                      -x_unit);
-                }
-                if (auto neighbour_east_y =
-                        height(x + half_tile - tile, z + half_tile);
-                    neighbour_east_y > up_y)
-                {
-
-                    vertices_.emplace_back<glm::vec3>({x, up_y, z + tile},
-                                                      x_unit);
-                    vertices_.emplace_back<glm::vec3>({x, up_y, z}, x_unit);
-                    vertices_.emplace_back<glm::vec3>({x, neighbour_east_y, z},
-                                                      x_unit);
-
-                    vertices_.emplace_back<glm::vec3>({x, neighbour_east_y, z},
-                                                      x_unit);
-                    vertices_.emplace_back<glm::vec3>(
-                        {x, neighbour_east_y, z + tile}, x_unit);
-                    vertices_.emplace_back<glm::vec3>({x, up_y, z + tile},
-                                                      x_unit);
-                }
+            case update_frequency::often:
+                return GL_DYNAMIC_DRAW;
+            case update_frequency::rarely:
+                return GL_STATIC_DRAW;
+            default:
+                throw std::runtime_error{std::format(
+                    "unknown update frequency: {}\n", std::to_underlying(f))};
             }
-        }
-        if (vbo_.has_value())
-        {
-            assert(vertices_.size() == render_component.vertices_number);
-        }
-        cpu_to_gpu_vertex_buffer(render_component.vao, vertices_);
-        render_component.vertices_number = vertices_.size();
-    }
+        }();
 
-    void update_continuous(components::render& render_component,
-                           const components::grid& grid_component,
-                           wave_function auto height)
-    {
-        using systems::x_unit;
-        using systems::y_unit;
-        using systems::z_unit;
-        vertices_.clear();
+        layout_.bind();
 
-        auto tile       = grid_component.tile_size;
-        auto half_tile  = tile / 2;
-        auto half_width = grid_component.width / 2;
-        auto half_depth = grid_component.depth / 2;
+        uint32_t new_buffer{};
+        glGenBuffers(1, std::addressof(new_buffer));
+        buffers_.push_back(new_buffer);
+        glBindBuffer(GL_ARRAY_BUFFER, new_buffer);
 
-        auto compute_normal = [](glm::vec3 a, glm::vec3 b, glm::vec3 c) {
-            auto ab = b - a;
-            auto ac = c - a;
-            return glm::normalize(glm::cross(ab, ac));
-        };
-
-        for (float x = -half_width; x < half_width; x += tile)
-        {
-            for (float z = -half_depth; z < half_depth; z += tile)
-            {
-                // first triangle
-                glm::vec3 a   = {x, height(x, z + tile), z + tile};
-                glm::vec3 b   = {x + tile, height(x + tile, z), z};
-                glm::vec3 c   = {x, height(x, z), z};
-                auto normal_1 = compute_normal(a, b, c);
-                vertices_.emplace_back(a, normal_1);
-                vertices_.emplace_back(b, normal_1);
-                vertices_.emplace_back(c, normal_1);
-
-                // second triangle
-                glm::vec3 d = {x, height(x, z + tile), z + tile};
-                glm::vec3 e = {x + tile, height(x + tile, z + tile), z + tile};
-                glm::vec3 f = {x + tile, height(x + tile, z), z};
-                auto normal_2 = compute_normal(d, e, f);
-                vertices_.emplace_back(d, normal_2);
-                vertices_.emplace_back(e, normal_2);
-                vertices_.emplace_back(f, normal_2);
-            }
-        }
-        if (vbo_.has_value())
-        {
-            assert(vertices_.size() == render_component.vertices_number);
-        }
-        cpu_to_gpu_vertex_buffer(render_component.vao, vertices_);
-        render_component.vertices_number = vertices_.size();
-    }
-
-    mesh(
-        components::render& render_component,
-        const components::grid& grid_component,
-        wave_function auto height = [](float x, float y) { return 0.f; })
-    {
+        auto size_in_bytes = (end - begin) * sizeof(value_type);
+        glBufferData(GL_ARRAY_BUFFER,
+                     size_in_bytes,
+                     std::to_address(begin),
+                     update_type);
+        layout_.define<value_type>();
     }
 };
 } // namespace wf::components

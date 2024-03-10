@@ -6,16 +6,14 @@ namespace wf::components
 void material::create_uniform_buffers_()
 {
 }
-material::material(const wf::resource::shader_program& shader) : shader_{shader}
+material::material(wf::resource::shader_program& shader) : shader_{shader}
 {
+    for (const auto& [name, info] : shader.uniform_infos)
+    {
+    }
 }
 
-const resource::shader_program& material::get_shader() const
-{
-    return shader_.get();
-}
-
-void material::bind() const
+void material::bind(uint32_t& binding_point) const
 {
     glUseProgram(shader_.get().id);
 }

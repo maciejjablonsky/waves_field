@@ -36,7 +36,7 @@ target_sources(waves_field PUBLIC
     src/systems/pc_input.cpp
     src/systems/physics.cpp
     src/systems/renderer.cpp
-    src/systems/waves.cpp
+    
     src/components/camera.cpp
     src/utils.cpp
     src/components/movement.cpp
@@ -66,13 +66,11 @@ target_sources(waves_field PUBLIC
         src/systems/physics.hpp
         src/systems/renderer.hpp
         src/systems/unit_axes.hpp
-        src/systems/waves.hpp
         src/utils.hpp
         src/components/velocity.hpp
         src/components/movement.hpp
         src/systems/movement.hpp
         src/components/material.hpp
-        src/vertex_buffer_layout.hpp
         src/uniform_buffer.hpp
         src/gl_error.hpp
 )

@@ -5,96 +5,66 @@
 
 namespace wf::components
 {
-std::vector<mesh_vertex> make_vertex_data(const tinyobj::shape_t& shape,
-                                          const tinyobj::attrib_t& attribute)
+void mesh::check_vertices_count_(size_t new_count)
 {
-    std::vector<mesh_vertex> vertices;
-    vertices.reserve(shape.mesh.indices.size());
-    for (const auto& index : shape.mesh.indices)
+    if (vertices_count_.has_value() and new_count != *vertices_count_)
     {
-        mesh_vertex v = {
-            .position = {attribute.vertices[3 * index.vertex_index + 0] * 0.5,
-                         attribute.vertices[3 * index.vertex_index + 1] * 0.5,
-                         attribute.vertices[3 * index.vertex_index + 2] * 0.5}};
-        vertices.push_back(v);
-    }
-    return vertices;
-}
-
-mesh::mesh(components::render& render_component,
-           const std::filesystem::path& mesh_path)
-{
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-
-    std::string err;
-    std::string warns;
-    if (not tinyobj::LoadObj(std::addressof(attrib),
-                             std::addressof(shapes),
-                             std::addressof(materials),
-                             std::addressof(warns),
-                             std::addressof(err),
-                             mesh_path.string().c_str()))
-    {
-        throw std::runtime_error(err);
-    }
-
-    auto cpu_vertex_buffer_data = make_vertex_data(shapes[0], attrib);
-    cpu_to_gpu_vertex_buffer(render_component.vao, cpu_vertex_buffer_data);
-    render_component.vertices_number = cpu_vertex_buffer_data.size();
-}
-
-mesh::~mesh()
-{
-    if (vbo_.has_value())
-    {
-        glDeleteBuffers(1, &*vbo_);
-    }
-}
-
-void mesh::cpu_to_gpu_vertex_buffer(GLuint vao,
-                                    const std::vector<mesh_vertex>& cpu_data)
-{
-    glBindVertexArray(vao);
-    if (not vbo_.has_value())
-    {
-        uint32_t vbo{};
-        glGenBuffers(1, std::addressof(vbo));
-        vbo_ = vbo;
-        glBindBuffer(GL_ARRAY_BUFFER, *vbo_);
-        glBufferData(GL_ARRAY_BUFFER,
-                     cpu_data.size() * sizeof(mesh_vertex),
-                     cpu_data.data(),
-                     GL_STATIC_DRAW);
-
-        glVertexAttribPointer(
-            0,
-            3,
-            GL_FLOAT,
-            GL_FALSE,
-            sizeof(mesh_vertex),
-            reinterpret_cast<const void*>(offsetof(mesh_vertex, position)));
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(
-            1,
-            3,
-            GL_FLOAT,
-            GL_FALSE,
-            sizeof(mesh_vertex),
-            reinterpret_cast<const void*>(offsetof(mesh_vertex, normal)));
-        glEnableVertexAttribArray(1);
+        throw std::runtime_error{std::format(
+            "mesh has already set {} vertices, but trying to set {}\n",
+            *vertices_count_,
+            new_count)};
     }
     else
     {
-        glBindBuffer(GL_ARRAY_BUFFER, *vbo_);
-        glBufferSubData(GL_ARRAY_BUFFER,
-                        0,
-                        cpu_data.size() * sizeof(mesh_vertex),
-                        cpu_data.data());
+        vertices_count_ = new_count;
     }
+}
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+size_t mesh::get_vertices_number() const
+{
+    return *vertices_count_;
+}
+
+void mesh::bind() const
+{
+    layout_.bind();
+}
+
+void vertex_buffer_layout::bind() const
+{
+    glBindVertexArray(vao_);
+}
+
+vertex_buffer_layout::vertex_buffer_layout()
+{
+    glGenVertexArrays(1, std::addressof(vao_));
+}
+
+vertex_buffer_layout::vertex_buffer_layout(
+    vertex_buffer_layout&& other) noexcept
+{
+    swap(other);
+}
+
+vertex_buffer_layout& vertex_buffer_layout::operator=(
+    vertex_buffer_layout&& other) noexcept
+{
+    if (this != std::addressof(other))
+    {
+        swap(other);
+    };
+    return *this;
+}
+
+void vertex_buffer_layout::swap(vertex_buffer_layout& other)
+{
+    std::swap(vao_, other.vao_);
+    std::swap(attribute_index_, other.attribute_index_);
+    std::swap(hashed_attributes_, other.hashed_attributes_);
+}
+
+vertex_buffer_layout::~vertex_buffer_layout()
+{
+    glDeleteVertexArrays(1, std::addressof(vao_));
 }
 } // namespace wf::components

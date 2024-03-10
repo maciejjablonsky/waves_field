@@ -65,8 +65,9 @@ void uniform_buffer::define(std::string_view name,
 
 void uniform_buffer::connect(const resource::shader_program& shader,
                              std::string_view uniform_block_name,
-                             uint32_t binding_point) const
+                             uint32_t& binding_point) const
 {
+    shader.use();
     uint32_t block_index =
         glGetUniformBlockIndex(shader.id, uniform_block_name.data());
     if (block_index == GL_INVALID_INDEX)
@@ -77,5 +78,6 @@ void uniform_buffer::connect(const resource::shader_program& shader,
     }
     glUniformBlockBinding(shader.id, block_index, binding_point);
     glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, *ubo_);
+    ++binding_point;
 }
 } // namespace wf
