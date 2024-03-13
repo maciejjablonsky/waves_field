@@ -35,6 +35,8 @@ class pc_input
 
     bool is_key_just_released_(int key) const;
 
+    bool is_key_just_pressed_(int key) const;
+
     void process_movement_keys_();
 
   public:

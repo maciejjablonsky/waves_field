@@ -5,6 +5,7 @@
 #include <fmt/format.h>
 #include <glfw_glew.hpp>
 #include <glm/glm.hpp>
+#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -29,14 +30,16 @@ struct uniform_info
     int32_t location{};
     uint32_t type{};
     int32_t size{};
-    std::optional<std::string> block_name = std::nullopt;
-    std::optional<int32_t> block_index    = std::nullopt;
+    std::string block_name{};
+    int32_t block_index{};
+    uint32_t block_binding{};
+    uint32_t offset{};
 };
 
 struct shader_program : private non_copyable
 {
     GLuint id{};
-    std::unordered_map<std::string, uniform_info> uniform_infos;
+    std::map<std::string, uniform_info> uniform_infos;
 
     shader_program(std::forward_iterator auto begin,
                    std::forward_iterator auto end)
@@ -65,6 +68,7 @@ struct shader_program : private non_copyable
 
     void set(std::string_view name, const glm::vec3& value);
     void set(std::string_view name, const glm::mat4& value);
+    void set(std::string_view name, float value);
     void use() const;
 
     ~shader_program() noexcept;
