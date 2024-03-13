@@ -72,7 +72,6 @@ class renderer
     glm::mat4 projection_matrix_;
     wf::optional_ref<const clock> clock_;
     wf::uniform_buffer vp_matrices_;
-    wf::uniform_buffer lighting_;
     static void framebuffer_size_callback(GLFWwindow* window,
                                           int width,
                                           int height);

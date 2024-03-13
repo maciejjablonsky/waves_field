@@ -40,6 +40,16 @@ bool pc_input::is_key_just_released_(int key) const
     return false;
 }
 
+bool pc_input::is_key_just_pressed_(int key) const
+{
+    if (keys_state_.contains(key))
+    {
+        auto state = keys_state_.at(key);
+        return state == key_state::pressed;
+    }
+    return false;
+}
+
 pc_input::pc_input(gsl::not_null<GLFWwindow*> glfw_window,
                    std::vector<systems::input_command>& commands)
     : commands_{commands}
@@ -135,7 +145,7 @@ void pc_input::update()
         commands_.get().emplace_back(
             std::in_place_type<input_commands::close_window>);
     }
-    if (is_key_pressed_(GLFW_KEY_SPACE))
+    if (is_key_just_pressed_(GLFW_KEY_SPACE))
     {
         commands_.get().emplace_back(
             std::in_place_type<input_commands::toggle_global_clock>);

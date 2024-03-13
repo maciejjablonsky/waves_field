@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fmt/std.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <print>
 #include <ranges>
 #include <resource/shaders_manager.hpp>
 #include <unordered_set>
@@ -137,6 +138,12 @@ void shader_program::set(std::string_view name, const glm::mat4& value)
     glUniformMatrix4fv(location, 1, false, glm::value_ptr(value));
 }
 
+void shader_program::set(std::string_view name, float value)
+{
+    auto location = glGetUniformLocation(id, name.data());
+    glUniform1f(location, value);
+}
+
 void shader_program::use() const
 {
     glUseProgram(id);
@@ -148,6 +155,16 @@ shader_program::~shader_program() noexcept
     {
         glDeleteProgram(id);
     }
+}
+
+std::string trim_uniform_name(std::string name)
+{
+    // auto pos = name.find('[');
+    // if (pos != std::string::npos)
+    //{
+    //     return std::string{name.substr(0, pos)};
+    // }
+    return std::string{name};
 }
 
 void shader_program::analyze_program_for_uniforms_()
@@ -162,6 +179,9 @@ void shader_program::analyze_program_for_uniforms_()
                           indices.data(),
                           GL_UNIFORM_BLOCK_INDEX,
                           block_indices.data());
+    std::vector<int32_t> offsets(uniforms);
+    glGetActiveUniformsiv(
+        id, uniforms, indices.data(), GL_UNIFORM_OFFSET, offsets.data());
 
     for (int i = 0; i < uniforms; ++i)
     {
@@ -176,6 +196,7 @@ void shader_program::analyze_program_for_uniforms_()
                            std::addressof(info.type),
                            name.data());
         name.resize(name_length);
+        std::print("Uniform name: {}, ", name);
 
         if (block_indices[i] != -1)
         {
@@ -188,17 +209,35 @@ void shader_program::analyze_program_for_uniforms_()
             glGetActiveUniformBlockName(
                 id, block_indices[i], name_length, nullptr, blockName.data());
             blockName.resize(name_length);
-            if (not wf::is_in(blockName, resource::uniform_names::block_names))
+
+            std::print("Uniform block name: {}", blockName);
+            info.block_name  = trim_uniform_name(blockName);
+            info.block_index = block_indices[i];
+            GLint uniformBlockBinding;
+            glGetActiveUniformBlockiv(id,
+                                      info.block_index,
+                                      GL_UNIFORM_BLOCK_BINDING,
+                                      &uniformBlockBinding);
+            info.block_binding = uniformBlockBinding;
+            info.offset        = offsets[i];
+            name               = trim_uniform_name(name);
+            if (!wf::is_in(name, resource::uniform_names::names))
             {
-                info.block_name = blockName;
+                uniform_infos[name] = info;
             }
         }
-        if (!wf::is_in(name, resource::uniform_names::names))
-        {
-            uniform_infos[{name.data(), static_cast<size_t>(name_length)}] =
-                info;
-        }
+        std::println("");
     }
+
+    // std::sort(std::begin(uniform_infos),
+    //           std::end(uniform_infos),
+    //           [](const auto& lhs, const auto& rhs) {
+    //               if (lhs.second.block_name != rhs.second.block_name)
+    //               {
+    //                   return lhs.second.block_name < rhs.second.block_name;
+    //               }
+    //               return lhs.second.offset < rhs.second.offset;
+    //           });
 }
 
 std::pair<std::string, shader_program> make_shader_program(

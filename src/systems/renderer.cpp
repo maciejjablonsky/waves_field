@@ -379,7 +379,7 @@ void renderer::initialize(const renderer_config& c,
     glDebugMessageCallback(GLDebugMessageCallback, nullptr);
 #endif
 
-    glClearColor(40.f / 256, 0.f / 256, 75.f / 256, 1.f);
+    // glClearColor(40.f / 256, 0.f / 256, 75.f / 256, 1.f);
     viewport_ = {c.width(), c.height()};
     glViewport(0, 0, viewport_.x, viewport_.y);
     glfwSwapInterval(0);
@@ -388,13 +388,8 @@ void renderer::initialize(const renderer_config& c,
     vp_matrices_.define<glm::mat4>(resource::uniform_names::view_matrix);
     vp_matrices_.define<glm::mat4>(resource::uniform_names::projection_matrix);
     vp_matrices_.define<glm::vec3>(resource::uniform_names::camera_position);
+    vp_matrices_.set_binding_point(0);
     vp_matrices_.configure();
-
-    lighting_.set(uniform_buffer::mode::rarely_updated);
-    lighting_.define<glm::vec3>("u_light_position", 16);
-    lighting_.define<glm::vec3>("u_light_color", 16);
-    lighting_.define<glm::vec3>("u_object_color", 16);
-    lighting_.configure();
 
     const auto& [main_camera, main_camera_transform] =
         find_main_camera(entities);
@@ -452,7 +447,7 @@ void renderer::recompute_vp_matrices_(
     projection_matrix_ = glm::perspective(glm::radians(camera.get_zoom()),
                                           viewport_.x / viewport_.y,
                                           0.1f,
-                                          1000.f);
+                                          100000.f);
     vp_matrices_.set(wf::resource::uniform_names::view_matrix, view_matrix_);
     vp_matrices_.set(wf::resource::uniform_names::projection_matrix,
                      projection_matrix_);
@@ -517,22 +512,21 @@ void renderer::render_with_materials_(entt::registry& entities)
                               components::mesh>();
     for (auto entity : view)
     {
-        auto& transform            = view.get<components::transform>(entity);
-        auto& material             = view.get<components::material>(entity);
-        auto& mesh                 = view.get<components::mesh>(entity);
-        auto& shader               = material.get_shader();
-        uint32_t ubo_binding_point = 0;
-        vp_matrices_.connect(
-            shader, resource::uniform_names::camera_block, ubo_binding_point);
-        material.bind(ubo_binding_point);
-        lighting_.connect(shader, "phong_lighting", ubo_binding_point);
+        auto& transform = view.get<components::transform>(entity);
+        auto& material  = view.get<components::material>(entity);
+        auto& mesh      = view.get<components::mesh>(entity);
+        auto& shader    = material.get_shader();
+        vp_matrices_.connect(shader,
+                             resource::uniform_names::camera_block.data());
+        material.bind();
 
         shader.set(resource::uniform_names::model_matrix,
                    transform.get_model_matrix());
 
-        lighting_.set("u_light_position"sv, glm::vec3{0.f, 200.f, 0.f});
-        lighting_.set("u_light_color"sv, glm::vec3{252, 229, 112} / 256.f);
-        lighting_.set("u_object_color"sv, glm::vec3{0.f, 0.19f, 0.39f});
+        shader.set("u_duration",
+                   std::chrono::duration_cast<std::chrono::duration<float>>(
+                       clock_->get().current())
+                       .count());
         mesh.bind();
         glDrawArrays(GL_TRIANGLES, 0, mesh.get_vertices_number());
     }
