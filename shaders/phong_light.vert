@@ -34,16 +34,17 @@ void main()
     float dWaveY_dx = 0.0; // Partial derivative with respect to x
     float dWaveY_dz = 0.0; // Partial derivative with respect to z
 
-    for(int i = 0; i <32; ++i) {
+    for(int i = 0; i < 32; ++i) {
         float omega = omega(u_frequency[i]);
         float distance = dot(in_position, u_direction[i]);
         float phase_without_zero_phase = omega * u_duration + (omega * distance / u_speed[i]);
         float common_phase = u_phase_0[i] + phase_without_zero_phase;
 
-        waveYOffset += u_amplitude[i] * exp(sin(common_phase) - 1.0);
-        float common_derivative = u_amplitude[i] * exp(sin(phase_without_zero_phase) - 1.0) * cos(phase_without_zero_phase);
-        dWaveY_dx += omega * u_direction[i].x *  common_derivative;
-        dWaveY_dz += omega * u_direction[i].z *  common_derivative;
+          waveYOffset += u_amplitude[i] * (sin(common_phase) - 1.0);
+          float common_derivative = u_amplitude[i] * cos(phase_without_zero_phase);
+          dWaveY_dx += omega * u_direction[i].x *  common_derivative;
+          dWaveY_dz += omega * u_direction[i].z *  common_derivative;
+
     }
 
     vec3 positionWithWave = vec3(in_position.x, in_position.y + waveYOffset, in_position.z);

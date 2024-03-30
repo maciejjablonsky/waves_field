@@ -21,7 +21,7 @@ layout(std140, binding = 1) uniform phong_lighting
 void main()
 {
     // ambient
-    float ambientStrength = 0.2;
+    float ambientStrength = 0.5;
     vec3 ambient          = ambientStrength * u_light_color;
 
     // diffuse
@@ -38,4 +38,5 @@ void main()
 
     vec3 result    = (ambient + diffuse + specular) * u_object_color;
     out_frag_color = vec4(result, 1.0);
+    // out_frag_color = vec4(normal, 1.0);
 }

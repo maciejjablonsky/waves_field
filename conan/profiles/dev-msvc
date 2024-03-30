@@ -1,3 +1,6 @@
 include(default)
 [conf]
 tools.cmake.cmaketoolchain:generator=Ninja Multi-Config
+[tool_requires]
+cmake/3.29.0
+ninja/1.11.1

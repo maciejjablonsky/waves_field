@@ -117,6 +117,12 @@ struct function_traits<Ret (Class::*)(Args...)>
         typename std::tuple_element<Index, std::tuple<Args...>>::type;
     static const std::size_t arity = sizeof...(Args);
 };
+
+template <std::floating_point T> constexpr bool is_equal(T&& a, T&& b)
+{
+    return std::abs(a - b) < std::numeric_limits<T>::epsilon() * std::abs(a);
+}
+
 } // namespace wf
 
 template <> struct fmt::formatter<glm::vec3> : fmt::formatter<std::string>

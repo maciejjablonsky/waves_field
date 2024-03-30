@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <optional>
+#include <stacktrace>
 #include <systems/unit_axes.hpp>
 #include <utils.hpp>
 #include <vector>
@@ -75,6 +76,36 @@ class vertex_buffer_layout : wf::non_copyable
     }
 };
 
+class index_buffer : wf::non_copyable
+{
+  private:
+    uint32_t ebo_;
+    int indices_count_{};
+
+  public:
+    index_buffer();
+    index_buffer(index_buffer&& other) noexcept;
+    index_buffer& operator=(index_buffer&& other) noexcept;
+    void swap(index_buffer& other) noexcept;
+    ~index_buffer() noexcept;
+    void assign(std::contiguous_iterator auto begin,
+                std::contiguous_iterator auto end)
+        requires std::same_as<
+            typename std::iterator_traits<decltype(begin)>::value_type,
+            uint32_t>
+    {
+        bind();
+        indices_count_ = end - begin;
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                     indices_count_ * sizeof(uint32_t),
+                     std::to_address(begin),
+                     GL_STATIC_DRAW);
+    }
+
+    void bind() const;
+    int get_indices_count() const;
+};
+
 class mesh : wf::non_copyable
 {
   public:
@@ -86,6 +117,7 @@ class mesh : wf::non_copyable
 
   private:
     vertex_buffer_layout layout_;
+    index_buffer index_buffer_;
 
     std::optional<size_t> vertices_count_;
     std::vector<uint32_t> buffers_;
@@ -102,7 +134,19 @@ class mesh : wf::non_copyable
 
   public:
     size_t get_vertices_number() const;
+    int get_indices_count() const;
     void bind() const;
+    void draw();
+    void assign_indices(std::contiguous_iterator auto begin,
+                        std::contiguous_iterator auto end)
+        requires std::same_as<
+            typename std::iterator_traits<decltype(begin)>::value_type,
+            uint32_t>
+    {
+        layout_.bind();
+        index_buffer_.assign(begin, end);
+    }
+
     void assign(std::contiguous_iterator auto begin,
                 std::contiguous_iterator auto end,
                 update_frequency f = update_frequency::rarely)

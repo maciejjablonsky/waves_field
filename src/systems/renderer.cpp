@@ -21,6 +21,10 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+extern "C"
+{
+    _declspec(dllexport) int NvOptimusEnablement = 0x00000001;
+}
 void APIENTRY GLDebugMessageCallback(GLenum source,
                                      GLenum type,
                                      GLuint id,
@@ -344,6 +348,8 @@ void renderer::initialize(const renderer_config& c,
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+
+    // glfwWindowHint(GLFW_SAMPLES, 4);
     glfw_window_ = glfwCreateWindow(
         c.width(), c.height(), c.name().data(), nullptr, nullptr);
 
@@ -447,7 +453,7 @@ void renderer::recompute_vp_matrices_(
     projection_matrix_ = glm::perspective(glm::radians(camera.get_zoom()),
                                           viewport_.x / viewport_.y,
                                           0.1f,
-                                          100000.f);
+                                          10000.f);
     vp_matrices_.set(wf::resource::uniform_names::view_matrix, view_matrix_);
     vp_matrices_.set(wf::resource::uniform_names::projection_matrix,
                      projection_matrix_);
@@ -528,7 +534,8 @@ void renderer::render_with_materials_(entt::registry& entities)
                        clock_->get().current())
                        .count());
         mesh.bind();
-        glDrawArrays(GL_TRIANGLES, 0, mesh.get_vertices_number());
+        glDrawElements(
+            GL_TRIANGLES, mesh.get_indices_count(), GL_UNSIGNED_INT, nullptr);
     }
 }
 } // namespace wf::systems

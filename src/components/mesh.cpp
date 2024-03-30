@@ -25,7 +25,18 @@ size_t mesh::get_vertices_number() const
     return *vertices_count_;
 }
 
+int mesh::get_indices_count() const
+{
+    return index_buffer_.get_indices_count();
+}
+
 void mesh::bind() const
+{
+    layout_.bind();
+    index_buffer_.bind();
+}
+
+void mesh::draw()
 {
     layout_.bind();
 }
@@ -66,5 +77,45 @@ void vertex_buffer_layout::swap(vertex_buffer_layout& other)
 vertex_buffer_layout::~vertex_buffer_layout()
 {
     glDeleteVertexArrays(1, std::addressof(vao_));
+}
+
+index_buffer::index_buffer()
+{
+    glGenBuffers(1, std::addressof(ebo_));
+}
+
+index_buffer::index_buffer(index_buffer&& other) noexcept
+{
+    swap(other);
+}
+
+index_buffer& index_buffer::operator=(index_buffer&& other) noexcept
+{
+    if (this != std::addressof(other))
+    {
+        swap(other);
+    }
+    return *this;
+}
+
+void index_buffer::swap(index_buffer& other) noexcept
+{
+    std::swap(ebo_, other.ebo_);
+    std::swap(indices_count_, other.indices_count_);
+}
+
+index_buffer::~index_buffer() noexcept
+{
+    glDeleteBuffers(1, std::addressof(ebo_));
+}
+
+void index_buffer::bind() const
+{
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+}
+
+int index_buffer::get_indices_count() const
+{
+    return indices_count_;
 }
 } // namespace wf::components
