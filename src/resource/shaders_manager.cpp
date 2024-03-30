@@ -61,7 +61,9 @@ GLuint get_shader_type(const std::filesystem::path& shader_path)
 {
     auto extension = shader_path.extension();
     std::unordered_map<std::string, uint32_t> ext_to_type{
-        {".vert", GL_VERTEX_SHADER}, {".frag", GL_FRAGMENT_SHADER}};
+        {".vert", GL_VERTEX_SHADER},
+        {".frag", GL_FRAGMENT_SHADER},
+        {".geometry", GL_GEOMETRY_SHADER}};
     if (auto it = ext_to_type.find(extension.string());
         it != std::end(ext_to_type))
     {
