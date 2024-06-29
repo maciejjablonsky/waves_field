@@ -1,5 +1,42 @@
-#include "app.hpp"
-#include <fmt/std.h>
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/mat4x4.hpp>
+#include <glm/vec4.hpp>
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
+#include <exception>
+#include <print>
+
+import vk;
+import window;
+
+namespace wf
+{
+class app
+{
+  private:
+    window window_;
+    vk::instance vk_instance_{window_};
+
+  public:
+    app()
+    {
+        while (!glfwWindowShouldClose(window_))
+        {
+            glfwPollEvents();
+            draw_frame();
+        }
+        vk_instance_.wait_device_idle();
+    }
+
+    void draw_frame()
+    {
+        vk_instance_.draw_frame();
+    }
+};
+} // namespace wf
 
 int main()
 {
@@ -9,8 +46,8 @@ int main()
     }
     catch (const std::exception& e)
     {
-        fmt::print("{}", e.what());
-        return EXIT_FAILURE;
+        std::print("{}", e.what());
+        return 1;
     }
-    return EXIT_SUCCESS;
+    return 0;
 }

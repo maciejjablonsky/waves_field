@@ -2,9 +2,10 @@ from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 import os
 
+required_conan_version = ">=2.0.0"
+
 class waves_field(ConanFile):
     name = "waves_field"
-    version = "0.1"
     package_type = "application"
 
     license = "MIT"
@@ -13,7 +14,7 @@ class waves_field(ConanFile):
 
     settings = "os", "compiler", "build_type", "arch"
 
-    exports_sources = "CMakeLists.txt", "src/*"
+    exports_sources = "CMakeLists.txt", "src/*", "shaders/*"
 
     default_options = {
         'boost/*:header_only': True
@@ -25,7 +26,6 @@ class waves_field(ConanFile):
     def requirements(self):
         self.requires("fmt/10.1.1")
         self.requires("glfw/3.3.8")
-        self.requires("glew/2.2.0")
         self.requires("glm/cci.20230113")
         self.requires("rapidjson/cci.20230929")
         self.requires("entt/3.12.2")
@@ -36,11 +36,16 @@ class waves_field(ConanFile):
         self.requires("freetype/2.13.2")
         self.requires("boost/1.84.0")
         self.requires("range-v3/0.12.0")
+        self.requires("vulkan-loader/1.3.268.0")
 
     def generate(self):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
+
+        if self.settings.compiler == "msvc" and self.settings.build_type == 'Release':
+            tc.extra_cxxflags.extend(['/O2', '/Oi', '/Ot', '/Oy', '/Ob2'])
+            tc.extra_exelinkflags.extend(['/LTCG'])
         tc.generate()
 
     def build(self):
