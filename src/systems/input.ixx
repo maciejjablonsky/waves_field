@@ -1,9 +1,11 @@
 module;
+#include <boost/container/flat_map.hpp>
 #include <entt/entt.hpp>
+#include <GLFW/glfw3.h>
+#include <gsl/pointers>
 #include <magic_enum/magic_enum.hpp>
 #include <print>
 #include <variant>
-
 export module systems.input;
 import callback_interfaces;
 import systems.pc_input;
@@ -12,49 +14,60 @@ import commands;
 
 namespace wf::systems
 {
-export class input : public ikey_handler
+auto make_glfw_keys_mapping()
+{
+    boost::container::flat_map<int, wf::systems::key> keys;
+    keys[GLFW_KEY_ESCAPE] = systems::key::escape;
+
+    return keys;
+}
+
+auto make_glfw_keys_action_mapping()
+{
+    boost::container::flat_map<int, wf::systems::key_state> states;
+    states[GLFW_PRESS]   = systems::key_state::pressed;
+    states[GLFW_RELEASE] = systems::key_state::released;
+    return states;
+}
+
+const auto keys_mapping       = make_glfw_keys_mapping();
+const auto keys_state_mapping = make_glfw_keys_action_mapping();
+
+export class input
 {
   private:
     entt::entity settings_entity_ = entt::null;
     std::variant<pc_input> active_system_{
         std::in_place_type<pc_input>, pc_input::create_info{settings_entity_}};
-    bool window_open_ = true;
+    gsl::not_null<GLFWwindow*> window_handle_;
 
     [[nodiscard]] bool is_pc_input_active_system_() const
     {
         return std::holds_alternative<pc_input>(active_system_);
     }
 
-    void update_window_open_(entt::registry& ecs)
-    {
-        if (ecs.all_of<commands::exit>(settings_entity_))
-        {
-            window_open_ = false;
-            ecs.erase<commands::exit>(settings_entity_);
-        }
-    }
+    void setup_keyboard_callback_();
+    static void keyboard_callback_(
+        GLFWwindow* window, int key, int scancode, int action, int mods);
 
   public:
-    struct create_info
+    input(entt::entity settings_entity,
+          gsl::not_null<GLFWwindow*> window_handle)
+        : settings_entity_(settings_entity), window_handle_(window_handle)
     {
-        entt::entity settings_entity;
-    };
-
-    explicit input(const create_info& info)
-        : settings_entity_(info.settings_entity)
-    {
+        setup_keyboard_callback_();
     }
+
+    ~input();
 
     void update(entt::registry& registry)
     {
         std::visit(
             [&](systems::system auto& system) { system.update(registry); },
             active_system_);
-
-        update_window_open_(registry);
     }
 
-    void handle_key(key key, key_state state) override
+    void handle_key(key key, key_state state)
     {
         if (not is_pc_input_active_system_())
         {
@@ -64,11 +77,25 @@ export class input : public ikey_handler
         auto& system = std::get<pc_input>(active_system_);
         system.consume_key(key, state);
     }
-
-    [[nodiscard]] bool is_window_open() const
-    {
-        return window_open_;
-    }
 };
+
+void input::setup_keyboard_callback_()
+{
+    glfwSetWindowUserPointer(window_handle_, this);
+    glfwSetKeyCallback(window_handle_, input::keyboard_callback_);
+}
+
+void input::keyboard_callback_(
+    GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    auto input_system = static_cast<input*>(glfwGetWindowUserPointer(window));
+    assert(input_system and "glfw window user pointer wasn't set");
+    input_system->handle_key(keys_mapping.at(key),
+                             keys_state_mapping.at(action));
+}
+input::~input()
+{
+    glfwSetWindowUserPointer(window_handle_, nullptr);
+}
 static_assert(system<input>);
 } // namespace wf::systems

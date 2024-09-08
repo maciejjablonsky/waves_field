@@ -1,6 +1,8 @@
 module;
 #include <array>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <gsl/pointers>
 #include <optional>
 #include <string_view>
 #include <vector>
@@ -8,7 +10,6 @@ module;
 
 export module vk;
 
-import window;
 import utils;
 
 namespace wf::vk
@@ -66,7 +67,7 @@ struct swap_chain_support_details
 export class instance : wf::non_copyable
 {
   private:
-    std::reference_wrapper<window> window_;
+    gsl::not_null<GLFWwindow*> window_handle_;
     VkInstance instance_                      = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
     VkSurfaceKHR surface_                     = VK_NULL_HANDLE;
@@ -215,7 +216,7 @@ export class instance : wf::non_copyable
 
   public:
     bool framebuffer_resized = false;
-    instance(window& window);
+    instance(gsl::not_null<GLFWwindow*> window_handle);
     operator VkInstance();
     void draw_frame();
     void wait_device_idle();

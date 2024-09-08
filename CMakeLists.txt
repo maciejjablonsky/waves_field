@@ -13,9 +13,9 @@ target_sources(waves_field
         PUBLIC
         src/main.cpp
         src/utils.cpp
+        src/vk/vk.cpp
         PUBLIC FILE_SET CXX_MODULES FILES
         src/utils.ixx
-        src/glfw.ixx
         src/systems.ixx
         src/systems/input.ixx
         src/callback_interfaces.ixx
@@ -23,6 +23,9 @@ target_sources(waves_field
         src/systems/system.ixx
         src/systems/key.ixx
         src/commands/commands.ixx
+        src/systems/render.ixx
+        src/systems/window.ixx
+        src/vk/vk.ixx
 )
 
 find_package(glfw3 REQUIRED CONFIG)
@@ -34,6 +37,7 @@ find_package(stb REQUIRED CONFIG)
 find_package(tinyobjloader REQUIRED CONFIG)
 find_package(EnTT REQUIRED CONFIG)
 find_package(Boost REQUIRED CONFIG)
+find_package(Microsoft.GSL REQUIRED CONFIG)
 
 target_link_libraries(waves_field
         PUBLIC
@@ -46,6 +50,7 @@ target_link_libraries(waves_field
         tinyobjloader::tinyobjloader
         EnTT::EnTT
         Boost::boost
+        Microsoft.GSL::GSL
 )
 
 install(TARGETS waves_field DESTINATION "."

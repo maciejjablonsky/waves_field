@@ -151,6 +151,21 @@ export template <std::integral To, std::integral From> To to(From from)
     return static_cast<To>(from);
 }
 
+export template <typename To, std::floating_point From> To to(From from)
+{
+    auto rounded = std::round(from);
+    if (from >= 0)
+    {
+        auto integer = static_cast<std::uintmax_t>(rounded);
+        return to<To>(integer);
+    }
+    else
+    {
+        auto integer = static_cast<std::intmax_t>(rounded);
+        return to<To>(integer);
+    }
+}
+
 export template <typename To, typename T> To size(const T& container) noexcept
 {
     return wf::to<To>(std::size(container));

@@ -7,8 +7,9 @@
 #include <format>
 #include <print>
 
-import glfw;
 import systems;
+import systems.window;
+import vk;
 
 namespace wf
 {
@@ -18,22 +19,21 @@ class app
   public:
     app()
     {
-        glfw glfw_instance({.window_width  = 800,
-                            .window_height = 600,
-                            .window_title  = "worlds simulator"s,
-                            .fullscreen    = false});
-
         entt::registry ecs;
         entt::entity settings = ecs.create();
 
-        systems::input input_system({settings});
-        glfw_instance.register_key_handler(input_system);
+        systems::window window_system("worlds simulator", settings);
+        systems::input input_system(settings,
+                                    window_system.get_window_handle());
+        vk::instance vk_instance(window_system.get_window_handle());
 
-        while (input_system.is_window_open())
+        while (window_system.is_open())
         {
-            glfw_instance.poll_events();
+            window_system.update(ecs);
             input_system.update(ecs);
+            vk_instance.draw_frame();
         }
+        vk_instance.wait_device_idle();
     }
 };
 } // namespace wf

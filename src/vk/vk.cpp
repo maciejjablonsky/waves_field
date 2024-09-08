@@ -10,6 +10,7 @@ module;
 #include <ranges>
 #include <set>
 #include <utility>
+#include <gsl/gsl>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -205,7 +206,7 @@ void instance::set_debug_messenger_()
 void instance::create_surface_()
 {
     if (glfwCreateWindowSurface(
-            instance_, window_.get(), nullptr, std::addressof(surface_)) !=
+            instance_, window_handle_, nullptr, std::addressof(surface_)) !=
         VK_SUCCESS)
     {
         throw std::runtime_error{"failed to create window surface!"};
@@ -234,10 +235,8 @@ static void framebuffer_resize_callback(GLFWwindow* window,
     app->framebuffer_resized = true;
 }
 
-instance::instance(window& window) : window_{window}
+instance::instance(gsl::not_null<GLFWwindow*> window_handle) : window_handle_{window_handle}
 {
-    glfwSetWindowUserPointer(window_.get(), this);
-    glfwSetFramebufferSizeCallback(window_.get(), framebuffer_resize_callback);
     create_instance_();
     set_debug_messenger_();
     create_surface_();
@@ -548,7 +547,7 @@ VkExtent2D instance::choose_swap_extent_(
     {
         int width, height;
         glfwGetFramebufferSize(
-            window_.get(), std::addressof(width), std::addressof(height));
+            window_handle_, std::addressof(width), std::addressof(height));
         VkExtent2D actual_extent = {
             static_cast<uint32_t>(width),
             static_cast<uint32_t>(height),
@@ -1252,11 +1251,11 @@ void instance::recreate_swap_chain_()
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(
-        window_.get(), std::addressof(width), std::addressof(height));
+        window_handle_, std::addressof(width), std::addressof(height));
     while (width == 0 || height == 0)
     {
         glfwGetFramebufferSize(
-            window_.get(), std::addressof(width), std::addressof(height));
+            window_handle_, std::addressof(width), std::addressof(height));
         glfwWaitEvents();
     }
     vkDeviceWaitIdle(logical_device_);
