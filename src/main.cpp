@@ -7,50 +7,43 @@
 #include <format>
 #include <print>
 
-import systems;
-import systems.window;
-import vk;
+#include <QDebug>
+#include <QDirIterator>
+#include <QFile>
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include <QQuickView>
+#include <QString>
 
-namespace wf
+// import utils;
+
+void traverseQmlDirectory(const QString& directoryPath)
 {
-using namespace std::string_literals;
-class app
-{
-  public:
-    app()
+    QDirIterator it(directoryPath, QDirIterator::Subdirectories);
+    while (it.hasNext())
     {
-        entt::registry ecs;
-        entt::entity settings = ecs.create();
-
-        systems::window window_system("worlds simulator", settings);
-        systems::input input_system(settings,
-                                    window_system.get_window_handle());
-        vk::instance vk_instance(window_system.get_window_handle());
-
-        while (window_system.is_open())
-        {
-            window_system.update(ecs);
-            input_system.update(ecs);
-            vk_instance.draw_frame();
-        }
-        vk_instance.wait_device_idle();
+        QString filePath = it.next();
+        qDebug() << filePath;
     }
-};
-} // namespace wf
-
-int main()
+}
+int main(int argc, char** argv)
 {
     try
     {
-        if (const char* cwd = std::getenv("WAVES_FIELD_WORKING_DIR"))
-        {
-            std::println("Switching current working directory to {}", cwd);
-            std::filesystem::current_path(cwd);
-        }
-        std::println("Current working directory: {}",
-                     std::filesystem::current_path().string());
+        QGuiApplication app(argc, argv);
 
-        wf::app app;
+        traverseQmlDirectory(":/");
+
+        QQmlApplicationEngine engine;
+
+        engine.loadFromModule("app", "Main");
+
+        if (engine.rootObjects().isEmpty())
+        {
+            return -1;
+        }
+
+        return app.exec();
     }
     catch (const std::exception& e)
     {

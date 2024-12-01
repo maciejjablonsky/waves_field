@@ -5,12 +5,12 @@ module;
 #include <chrono>
 #include <fmt/color.h>
 #include <fmt/format.h>
+#include <gsl/gsl>
 #include <magic_enum/magic_enum.hpp>
 #include <print>
 #include <ranges>
 #include <set>
 #include <utility>
-#include <gsl/gsl>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -34,9 +34,7 @@ module vk;
 
 import utils;
 
-namespace std
-{
-template <> struct hash<wf::vk::vertex>
+template <> struct std::hash<wf::vk::vertex>
 {
     size_t operator()(const wf::vk::vertex& vertex) const
     {
@@ -46,7 +44,7 @@ template <> struct hash<wf::vk::vertex>
                (hash<glm::vec2>()(vertex.tex_coord) << 1);
     }
 };
-} // namespace std
+
 namespace wf::vk
 {
 static VKAPI_ATTR VkBool32
@@ -218,8 +216,8 @@ std::vector<const char*> get_required_extensions()
     uint32_t glfw_extensions_count = 0;
     const char** glfw_extensions   = glfwGetRequiredInstanceExtensions(
         std::addressof(glfw_extensions_count));
-    std::vector<const char*> extensions(
-        glfw_extensions, glfw_extensions + glfw_extensions_count);
+    std::vector extensions(glfw_extensions,
+                           glfw_extensions + glfw_extensions_count);
     if (validation_layers_enabled)
     {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -235,7 +233,8 @@ static void framebuffer_resize_callback(GLFWwindow* window,
     app->framebuffer_resized = true;
 }
 
-instance::instance(gsl::not_null<GLFWwindow*> window_handle) : window_handle_{window_handle}
+instance::instance(gsl::not_null<GLFWwindow*> window_handle)
+    : window_handle_{window_handle}
 {
     create_instance_();
     set_debug_messenger_();
@@ -940,7 +939,7 @@ void instance::create_render_pass_()
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-    std::array<VkAttachmentDescription, 3> attachments = {
+    std::array attachments = {
         color_attachment, depth_attachment, color_attachment_resolve};
     VkRenderPassCreateInfo render_pass_info{};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -1443,8 +1442,7 @@ void instance::create_descriptor_pool_()
 
 void instance::create_descriptor_sets_()
 {
-    std::vector<VkDescriptorSetLayout> layouts(max_frames_in_flight,
-                                               descriptor_set_layout_);
+    std::vector layouts(max_frames_in_flight, descriptor_set_layout_);
     VkDescriptorSetAllocateInfo alloc_info{};
     alloc_info.sType          = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     alloc_info.descriptorPool = descriptor_pool_;
@@ -2077,8 +2075,8 @@ void instance::create_logical_device_()
     queue_family_indices indices = find_queue_families_(physical_device_);
 
     std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
-    std::set<uint32_t> unique_queue_families = {indices.graphics_family.value(),
-                                                indices.present_family.value()};
+    std::set unique_queue_families = {indices.graphics_family.value(),
+                                      indices.present_family.value()};
 
     float queue_priority = 1.0f;
     for (uint32_t queue_family : unique_queue_families)

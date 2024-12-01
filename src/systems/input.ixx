@@ -4,7 +4,6 @@ module;
 #include <GLFW/glfw3.h>
 #include <gsl/pointers>
 #include <magic_enum/magic_enum.hpp>
-#include <print>
 #include <variant>
 export module systems.input;
 import callback_interfaces;
@@ -30,8 +29,14 @@ auto make_glfw_keys_action_mapping()
     return states;
 }
 
-const auto keys_mapping       = make_glfw_keys_mapping();
-const auto keys_state_mapping = make_glfw_keys_action_mapping();
+const auto KEYS_MAPPING       = make_glfw_keys_mapping();
+const auto KEYS_STATE_MAPPING = make_glfw_keys_action_mapping();
+
+enum class menu_state
+{
+    visible,
+    hidden
+};
 
 export class input
 {
@@ -40,6 +45,7 @@ export class input
     std::variant<pc_input> active_system_{
         std::in_place_type<pc_input>, pc_input::create_info{settings_entity_}};
     gsl::not_null<GLFWwindow*> window_handle_;
+    menu_state menu_state = menu_state::visible;
 
     [[nodiscard]] bool is_pc_input_active_system_() const
     {
@@ -90,8 +96,8 @@ void input::keyboard_callback_(
 {
     auto input_system = static_cast<input*>(glfwGetWindowUserPointer(window));
     assert(input_system and "glfw window user pointer wasn't set");
-    input_system->handle_key(keys_mapping.at(key),
-                             keys_state_mapping.at(action));
+    input_system->handle_key(KEYS_MAPPING.at(key),
+                             KEYS_STATE_MAPPING.at(action));
 }
 input::~input()
 {

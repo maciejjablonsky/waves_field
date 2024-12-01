@@ -6,22 +6,25 @@ arch=x86_64
 compiler=clang
 compiler.cppstd=23
 compiler.runtime=dynamic
-compiler.version=18
+compiler.version=19
 compiler.runtime_version=v144
 build_type=Release
 
 [conf]
-tools.cmake.cmaketoolchain:generator=Ninja Multi-Config
+tools.cmake.cmaketoolchain:generator=Ninja
 tools.env.virtualenv:powershell=True
 
 [buildenv]
 PATH=+(path){{ os.path.join(os.environ['VULKAN_SDK'], 'Bin') if "VULKAN_SDK" in os.environ }}
 PATH=+(path)C:\Program Files\LLVM\bin
+CMAKE_PREFIX_PATH=+(path)C:\Qt\6.7.3\msvc2022_64\lib\cmake
 
 [runenv]
 # VK_INSTANCE_LAYERS=VK_LAYER_LUNARG_api_dump;VK_LAYER_KHRONOS_validation
 VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation
 WAVES_FIELD_WORKING_DIR={{ os.getcwd() }}
+QML_DIR={{ os.path.join(os.getcwd(), "qml") }}
+PATH=+(path)C:\Qt\6.7.3\msvc2022_64\bin
 
 [options]
 boost/*:header_only=True

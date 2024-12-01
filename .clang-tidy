@@ -1,4 +1,8 @@
-Checks: 'readability-identifier-naming;modernize-*'
+Checks:
+  - readability-identifier-naming
+  - modernize-*
+  - readability-magic-numbers
+WarningsAsErrors: '*'
 
 CheckOptions:
   - key: readability-identifier-naming.ClassCase
@@ -21,3 +25,4 @@ CheckOptions:
     value: '_'
   - key: readability-identifier-naming.ScopedEnumConstantCase
     value: 'lower_case'
+

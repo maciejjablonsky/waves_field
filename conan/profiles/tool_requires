@@ -1,3 +1,5 @@
 [tool_requires]
-cmake/3.30.1
-ninja/1.12.1
+cmake/3.30.5
+
+[replace_tool_requires]
+ninja/*: ninja/1.12.1

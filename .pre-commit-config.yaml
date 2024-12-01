@@ -1,0 +1,17 @@
+repos:
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+      - id: clang-tidy
+        verbose: true
+        log_file: C:\dev\waves_field\log.clang-tidy
+        args:
+        - -p=build\Debug
+        - --config-file=.clang-tidy
+        - --header-filter=./*
+#        - -Qunused-arguments
+#      - id: clang-format
+  - repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+      - id: cmake-format

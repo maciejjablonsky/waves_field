@@ -16,7 +16,7 @@ std::string load_text_from_file(const std::filesystem::path& path)
 {
     std::ifstream file{path};
     file.exceptions(std::istream::failbit | std::ifstream::badbit);
-    std::string text = {std::istreambuf_iterator<char>{file}, {}};
+    std::string text = {std::istreambuf_iterator{file}, {}};
     return text;
 }
 

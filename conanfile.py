@@ -27,12 +27,13 @@ class waves_field(ConanFile):
         self.requires("entt/3.13.2")
         self.requires("tinyobjloader/2.0.0-rc10")
         self.requires("ms-gsl/4.0.0")
-        # self.requires("mp-units/2.1.0")
+        self.requires("mp-units/2.3.0")
         self.requires("magic_enum/0.9.5")
-        # self.requires("freetype/2.13.2")
+        # self.requires("freetype/2.13.3", override=True)
         self.requires("boost/1.84.0")
         self.requires("range-v3/0.12.0")
         self.requires("vulkan-loader/1.3.290.0")
+        self.requires("vulkan-headers/1.3.290.0")
         self.requires("stb/cci.20240213")
 
     def generate(self):

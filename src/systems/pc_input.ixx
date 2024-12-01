@@ -58,6 +58,20 @@ export class pc_input
         }
     }
 
+    struct scoped_keys_update
+    {
+        std::reference_wrapper<pc_input> system;
+        scoped_keys_update(pc_input& system) : system(system)
+        {
+        }
+        ~scoped_keys_update()
+        {
+            system.get().update_keys_states_();
+        }
+    };
+
+    friend struct scoped_keys_update;
+
   public:
     struct create_info
     {
@@ -77,10 +91,8 @@ export class pc_input
 
     void update(entt::registry& registry)
     {
+        scoped_keys_update ku(*this);
         update_app_exit_(registry);
-
-        // at the end
-        update_keys_states_();
     }
 };
 static_assert(system<pc_input>);
