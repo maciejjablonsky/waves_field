@@ -12,8 +12,11 @@ module;
 #include <set>
 #include <utility>
 
+#define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -30,7 +33,7 @@ module;
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
-module vk;
+module wf.vk;
 
 import utils;
 
@@ -203,12 +206,20 @@ void instance::set_debug_messenger_()
 
 void instance::create_surface_()
 {
-    if (glfwCreateWindowSurface(
-            instance_, window_handle_, nullptr, std::addressof(surface_)) !=
-        VK_SUCCESS)
+    VkWin32SurfaceCreateInfoKHR create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    create_info.hwnd = reinterpret_cast<HWND>(window_handle_);
+    create_info.hinstance = GetModuleHandle(nullptr);
+    if (vkCreateWin32SurfaceKHR(instance_, std::addressof(create_info), nullptr, std::addressof(surface_)) != VK_SUCCESS)
     {
         throw std::runtime_error{"failed to create window surface!"};
     }
+
+    // if (glfwCreateWindowSurface(
+    //         instance_, window_handle_, nullptr, std::addressof(surface_)) !=
+    //     VK_SUCCESS)
+    // {
+    // }
 }
 
 std::vector<const char*> get_required_extensions()
@@ -218,6 +229,8 @@ std::vector<const char*> get_required_extensions()
         std::addressof(glfw_extensions_count));
     std::vector extensions(glfw_extensions,
                            glfw_extensions + glfw_extensions_count);
+    extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+    extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
     if (validation_layers_enabled)
     {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -233,7 +246,7 @@ static void framebuffer_resize_callback(GLFWwindow* window,
     app->framebuffer_resized = true;
 }
 
-instance::instance(gsl::not_null<GLFWwindow*> window_handle)
+instance::instance(uintptr_t window_handle)
     : window_handle_{window_handle}
 {
     create_instance_();
@@ -544,9 +557,9 @@ VkExtent2D instance::choose_swap_extent_(
     }
     else
     {
-        int width, height;
-        glfwGetFramebufferSize(
-            window_handle_, std::addressof(width), std::addressof(height));
+        int width = 800, height = 600;
+        // glfwGetFramebufferSize(
+        //     window_handle_, std::addressof(width), std::addressof(height));
         VkExtent2D actual_extent = {
             static_cast<uint32_t>(width),
             static_cast<uint32_t>(height),
@@ -824,10 +837,10 @@ void instance::create_graphics_pipeline_()
     color_blending.logicOp           = VK_LOGIC_OP_COPY;
     color_blending.attachmentCount   = 1;
     color_blending.pAttachments      = std::addressof(color_blend_attachment);
-    color_blending.blendConstants[0] = 0.f;
-    color_blending.blendConstants[1] = 0.f;
-    color_blending.blendConstants[2] = 0.f;
-    color_blending.blendConstants[3] = 0.f;
+    // color_blending.blendConstants[0] = 0.f;
+    // color_blending.blendConstants[1] = 0.f;
+    // color_blending.blendConstants[2] = 0.f;
+    // color_blending.blendConstants[3] = 0.f;
 
     VkPipelineLayoutCreateInfo pipeline_layout_info{};
     pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1248,13 +1261,13 @@ void instance::create_sync_objects_()
 
 void instance::recreate_swap_chain_()
 {
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(
-        window_handle_, std::addressof(width), std::addressof(height));
+    int width = 800, height = 600;
+    // glfwGetFramebufferSize(
+    //     window_handle_, std::addressof(width), std::addressof(height));
     while (width == 0 || height == 0)
     {
-        glfwGetFramebufferSize(
-            window_handle_, std::addressof(width), std::addressof(height));
+        // glfwGetFramebufferSize(
+        //     window_handle_, std::addressof(width), std::addressof(height));
         glfwWaitEvents();
     }
     vkDeviceWaitIdle(logical_device_);

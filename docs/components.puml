@@ -1,0 +1,28 @@
+@startuml
+
+package "UI" {
+    [Main Menu] o-- [Simulation Picker]
+    [Main Menu] o-- [Settings]
+    [Settings] o-- [Graphics Settings]
+    [Settings] o-- [Audio Settings]
+    [Settings] o-- [Gameplay Settings]
+
+    () "Simulation Tweaker"
+    [Simulation Window] *-- [Simulation Tweaker]
+}
+
+package "Backend" {
+    [Event Loop] -- [Main Menu]
+    [Event Loop] -- [Simulation Window]
+    () "Commands"
+    [Event Loop] -- [Commands]
+    () "Simulation"
+    [Simulation Manager] -- [Simulation Window]
+    [Simulation Manager] *-- [Simulation]
+    [Commands] -- [Simulation]
+    [Commands] -- [Simulation Manager]
+}
+
+
+
+@enduml

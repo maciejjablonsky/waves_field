@@ -8,7 +8,7 @@ module;
 #include <vector>
 #include <vulkan/vulkan.h>
 
-export module vk;
+export module wf.vk;
 
 import utils;
 
@@ -67,7 +67,7 @@ struct swap_chain_support_details
 export class instance : wf::non_copyable
 {
   private:
-    gsl::not_null<GLFWwindow*> window_handle_;
+    unsigned long long window_handle_;
     VkInstance instance_                      = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
     VkSurfaceKHR surface_                     = VK_NULL_HANDLE;
@@ -216,7 +216,7 @@ export class instance : wf::non_copyable
 
   public:
     bool framebuffer_resized = false;
-    instance(gsl::not_null<GLFWwindow*> window_handle);
+    instance(unsigned long long window_id);
     operator VkInstance();
     void draw_frame();
     void wait_device_idle();

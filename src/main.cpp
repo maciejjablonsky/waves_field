@@ -5,45 +5,38 @@
 #include <entt/entt.hpp>
 #include <filesystem>
 #include <format>
+#include <future>
 #include <print>
+#include <thread>
 
-#include <QDebug>
-#include <QDirIterator>
-#include <QFile>
-#include <QGuiApplication>
-#include <QQmlApplicationEngine>
-#include <QQuickView>
-#include <QString>
+import wf.ui;
+import wf.vk;
 
-// import utils;
-
-void traverseQmlDirectory(const QString& directoryPath)
-{
-    QDirIterator it(directoryPath, QDirIterator::Subdirectories);
-    while (it.hasNext())
-    {
-        QString filePath = it.next();
-        qDebug() << filePath;
-    }
-}
 int main(int argc, char** argv)
 {
     try
     {
-        QGuiApplication app(argc, argv);
-
-        traverseQmlDirectory(":/");
-
-        QQmlApplicationEngine engine;
-
-        engine.loadFromModule("app", "Main");
-
-        if (engine.rootObjects().isEmpty())
+        if (auto cwd = std::getenv("WAVES_FIELD_WORKING_DIR"))
         {
-            return -1;
+            std::filesystem::current_path(cwd);
         }
+        std::promise<wf::window_handle> window_handle{};
+        std::jthread gui_thread([=, &window_handle] {
+            wf::ui ui(argc, argv);
+            window_handle.set_value(ui.handle());
+            return ui.run();
+        });
 
-        return app.exec();
+        std::jthread engine_thread([&window_handle] {
+            auto handle = window_handle.get_future().get();
+            wf::vk::instance vk{handle.id};
+            while (1)
+            {
+            vk.draw_frame();
+            }
+            // wf::vk::instance
+        });
+
     }
     catch (const std::exception& e)
     {

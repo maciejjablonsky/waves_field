@@ -11,7 +11,8 @@ with section("parse"):
                  "VERSION": 1,
                  "QML_FILES": "*",
                  "RESOURCES": "*",
-                 "RESOURCE_PREFIX": 1
+                 "RESOURCE_PREFIX": 1,
+                 "OUTPUT_DIRECTORY": 1
             }
         },
         "find_package": {
